@@ -7,8 +7,15 @@
 
 ## Waiting on Tracy
 - Viewbook mailing list / Slate query with emails (since 9/18).
-- Response to Slate sync requests posted on monday (10/5).
-- Committed 10/6: app reports for marketing; deeper source data (incl. events) in the AC sync; counselor call tasks after visits; visited-not-applied segment.
+- Slate sync requests (monday update, 10/5):
+  - ● Program of interest for Seminary (filled bullet; may already be handled)
+  - Date of application start and finish
+  - Date of visit registration
+  - Bounced emails / suppression list
+  - High school grad year
+  - Fix duplicate records coming from AC to Slate via Program Finder
+  - Deeper source info (Common App, events, etc.)
+- Committed 10/6: app reports for marketing; counselor call tasks after visits; visited-not-applied segment.
 - VIP status query to tag Program Finder VIPs in AC.
 - A common Slate query to refresh for pipeline status ([[Reporting]]).
 - 30-min meeting on events and the AC→Slate sync (Brent asked 10/12; she wants the events talk too, but no time set).
