@@ -1,0 +1,20 @@
+# Claude Vault: Operating Notes
+
+This vault is Claude's working memory for Brent's work at Ashland University (AU). Claude writes here. Brent reads, browses, and corrects.
+
+## Rules
+- **Brent's primary vault (`brossman93/obsidian-vault`) is read-only.** Never commit, push, or change anything there. Read it for context only.
+- Scope is AU work. Leave out JP2 contract work and personal or family matters.
+- Write facts and decisions, not transcripts. Keep pages short. Link with `[[wikilinks]]`.
+- If Brent edits a page, his version wins. Don't overwrite his changes.
+- Once a week (Fridays), consolidate: merge duplicates, trim stale detail, and roll old daily notes into a monthly summary.
+
+## Structure
+- `Home.md`: the index and current focus
+- `Glossary.md`: AU shorthand, acronyms, and tools
+- `People/`: one page per colleague, covering role and what we work on together
+- `Projects/`: one page per ongoing area, covering status, decisions, and open questions
+- `Daily/`: one note per weekday morning report (`YYYY-MM-DD.md`)
+
+## Commit messages
+Use `claude: <what changed>`, e.g. `claude: daily note 2026-10-14`.
