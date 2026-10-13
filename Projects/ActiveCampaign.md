@@ -19,6 +19,7 @@ AU's email/CRM infrastructure build-out.
 - VIP status from the Program Finder isn't reaching Slate; [[Tracy Lantz|TL]] is building a query to tag them in AC.
 - Program Finder creates duplicate records in Slate; the degree-type field was showing codes (9/29).
 - Slate records should link to the AC contact; Tracy has an AC seat.
+- Events: Tracy requires campus events and registrations be built in Slate (ticket), not AC (10/13). Brent wants AC registration/attendance to flow into Slate; meeting requested.
 
 ## Email build rules
 - Match AC's own skeleton: one `es-wrapper`, few stripes, all tables (no divs), no DOCTYPE/html/head/body

@@ -16,6 +16,7 @@ Nov. 14 is both the UG Preview Day and [[ATS Email Marketing|Seminary]] Preview 
 - Asked Slade whether current students or recent alumni can attend (they must register).
 - Event page updated 10/12 with speaker bio and pathways; registration form may need matching pathways.
 - AC automation: "ENR: sem ev - 2026.11.14 SEM Preview Day".
+- **Conflict:** registration runs through AC, but [[Tracy Lantz|Tracy]] says events and registrations must be built in Slate (ticket), and wants to talk before another event is scheduled (10/13). Resolve before registrations pile up.
 
 ## Decisions
 - Seminary promotion prioritized over nursing (10/8).
