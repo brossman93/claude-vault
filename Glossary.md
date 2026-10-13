@@ -15,9 +15,9 @@
 | PRS | Psychology Research Scholars |
 | RFI | Request for information; an inquiry form fill |
 | TP | Touchpoint in an email sequence (e.g., TP4-1) |
-| Program Finder | Quiz-style tool on the site; fills score 15 pts and carry VIP status |
+| Program Finder | Tool on the AU site; fills score 15 pts and carry VIP status |
 | VIP status | Program Finder flag meant to sync to Slate |
-| In Pursuit | AU's program/campaign site; PRS links redirect there |
+| In Pursuit | Site with the InPursuit form; PRS links redirect there |
 | BookMe | Counselors' scheduling links |
 | CommonApp suspect | Has AU on their Common App list, no term or plan chosen |
 | CommonApp prospect | Has AU on their list plus a start term and admission plan |
