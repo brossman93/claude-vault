@@ -5,6 +5,9 @@
 - Has an AC seat (assigned ~10/7) so Slate records can link to AC contacts.
 - **Rule (10/12–13):** campus events and registrations are built in Slate via a ticket, not in AC. She wants to discuss how events are handled before another event is scheduled.
 
+## Brent owes Tracy
+- Review of the Slate "International App Started" mailings, with recommendations to cut sends (asked 10/8).
+
 ## Waiting on Tracy
 - Viewbook mailing list / Slate query with emails (since 9/18).
 - Slate sync requests (monday update, 10/5):

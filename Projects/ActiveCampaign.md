@@ -13,7 +13,8 @@ AU's email/CRM infrastructure build-out.
 - UG inquiry nurture sequence running alongside one-time broadcasts ([[UG Inquiry Sequence]])
 
 ## Slate sync and scoring
-- Site tracking is down; [[Kaitlynn Payne|KP]] is asking Reworkflow about adding JavaScript (9/22). Manual uploads didn't score; AC is looking into it.
+- Site tracking script is live on the RFI form (9/30) and works for new contacts (confirmed 10/6). Bailey Raffield (Reworkflow) is adding it to the visit forms the week of 10/12.
+- Lead scoring bug: Visit Scheduled Date and RFI Date rules don't calculate. AC support escalated to engineering 9/17; no fix as of 9/29.
 - Program Finder fills score 15 points, behind RFI. Revisit after site tracking is fixed.
 - Send scoring bands (high/medium/low) to Slate instead of raw scores (10/7).
 - VIP status from the Program Finder isn't reaching Slate; [[Tracy Lantz|TL]] is building a query to tag them in AC.

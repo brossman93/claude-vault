@@ -6,7 +6,9 @@
 | ATS / SEM | Ashland Theological Seminary, part of AU |
 | AC | ActiveCampaign, AU's email/CRM platform |
 | Slate | Admissions CRM; syncs with AC via Reworkflow and Zapier |
-| Reworkflow | Vendor behind the AC–Slate sync |
+| Reworkflow (ReW) | Vendor behind the AC–Slate sync; Bailey Raffield is the Slate developer |
+| CampusESP | Family/parent engagement platform; asks for cohort data files |
+| Engage | Slate's annual conference |
 | Stripo | The drag-and-drop email editor inside AC |
 | MACMHC | ATS's clinical mental health counseling program |
 | CT | Christianity Today, used for ATS newsletter placements |

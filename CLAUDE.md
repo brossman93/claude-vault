@@ -15,6 +15,7 @@ This vault is Claude's working memory for Brent's work at Ashland University (AU
 - `People/`: one page per colleague, covering role and what we work on together
 - `Projects/`: one page per ongoing area, covering status, decisions, and open questions
 - `Personal/`: Brent's non-work interests and context, kept light
+- `Inbox.md`: open threads from Brent's AU Outlook inbox; the morning report reads it for Needs attention and Waiting on others, and moves closed items to Done
 - `This Week.md`: Brent's 2–3 goals for the week, set Mondays; rank daily priorities against them
 - `Daily/`: one note per weekday morning report (`YYYY-MM-DD.md`)
 - `Weekly/`: one Friday review per week (`YYYY-Www.md`)

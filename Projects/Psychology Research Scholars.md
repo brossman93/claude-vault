@@ -18,3 +18,9 @@ PRS is essentially an honors track for psych majors (roughly 20–30% of them). 
 - Don't gate PRS emails by GPA. Let the humans decide.
 - Hold AU application emails until the study app and video are up.
 - Soft launch, then digital ads after the video and study app.
+
+## Launch plan (Kyle, 10/13)
+- Ready: brochures and wearables (in Kyle's building), landing page and apply form (minor tweaks left), applicant tracking file, approved press release, ~5,000-piece prospect mailing.
+- Week of 10/13: hand out brochures, reach out one-on-one to qualifying applicants, give wearables to current students.
+- Week of 10/20: video and study app up for final review Tue 10/20, then on the landing page; mailing drops; press release and video on social; digital ads on. Other assets go even if the video slips.
+- After: automated email to eligible AU applicants who haven't applied to PRS; regular alum, student and faculty social content.

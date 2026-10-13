@@ -4,6 +4,7 @@ Claude's working memory for Brent's AU marketing and communications work. Start 
 
 ## This week
 - [[This Week]]: current goals
+- [[Inbox]]: open AU email threads (replies owed, waiting on others)
 
 ## Projects
 - [[Application Push]]: closing the UG application gap; post-visit flow
