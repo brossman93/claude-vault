@@ -17,6 +17,7 @@ This vault is Claude's working memory for Brent's work at Ashland University (AU
 - `This Week.md`: Brent's 2–3 goals for the week, set Mondays; rank daily priorities against them
 - `Daily/`: one note per weekday morning report (`YYYY-MM-DD.md`)
 - `Weekly/`: one Friday review per week (`YYYY-Www.md`)
+- `.brief/`: the morning brief page builder (see `.brief/README.md`); hidden in Obsidian
 
 ## Commit messages
 Use `claude: <what changed>`, e.g. `claude: daily note 2026-10-14`.

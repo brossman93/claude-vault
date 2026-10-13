@@ -1,0 +1,558 @@
+#!/usr/bin/env python3
+"""Build Brent's interactive morning brief from a data JSON file.
+
+Usage: python3 build.py data.json out.html [--preview preview.html]
+
+out.html is the artifact body (no doctype/html/head/body; the Artifact tool
+adds the skeleton). --preview also writes a standalone page for screenshots.
+The page keeps priorities in the artifact's `db` (collection `tasks`) and
+calls monday.com and Gmail through the `mcp` capability. Publish with
+capabilities: {"db": {}, "user": {}, "mcp": {"servers": [
+  {"server": "monday.com", "tools": ["change_item_column_values"]},
+  {"server": "Gmail", "tools": ["trash_thread"]}]}}
+"""
+import base64, html, json, math, pathlib, sys, urllib.parse
+from datetime import date
+
+HERE = pathlib.Path(__file__).parent
+e = html.escape
+
+
+def font_b64():
+    for p in [HERE / 'fraunces-latin-600-normal.woff2']:
+        if p.exists():
+            return base64.b64encode(p.read_bytes()).decode()
+    return ''
+
+
+def seed_href(seed):
+    return 'https://claude.ai/new?q=' + urllib.parse.quote(seed, safe='') + '&surface=cowork&composer=mini'
+
+
+def btn(b, cls='btn'):
+    if not b:
+        return ''
+    return f'<a class="{cls}" href="{e(seed_href(b["seed"]))}">{e(b["label"])}</a>'
+
+
+def link(title, url):
+    return f'<a href="{e(url)}">{e(title)}</a>' if url else e(title)
+
+
+def hour_label(h):
+    hh = int(h)
+    m = int(round((h - hh) * 60))
+    suf = 'AM' if hh < 12 else 'PM'
+    h12 = hh % 12 or 12
+    return f'{h12}:{m:02d} {suf}' if m else f'{h12} {suf}'
+
+
+# ---------- terrain ----------
+def terrain(d):
+    W, BASE, H0, H1 = 840, 118, 7, 21
+    today = d['days'][0]['events'] if d.get('days') else []
+    def x_of(h):
+        return (h - H0) / (H1 - H0) * W
+    bumps = []
+    for ev in today:
+        mid = (ev['start'] + ev['end']) / 2
+        dur = ev['end'] - ev['start']
+        amp = min(46, 14 + 10 * dur) * (1.0 if ev['lane'] == 'au' else 0.75)
+        sig = max(26, dur / (H1 - H0) * W * 0.55)
+        bumps.append((x_of(mid), amp, sig, ev['lane'], dur))
+    pts = []
+    for i in range(0, 85):
+        x = i * W / 84
+        y = BASE - sum(a * math.exp(-((x - cx) ** 2) / (2 * s * s)) for cx, a, s, _, _ in bumps)
+        pts.append((x, y))
+    path = 'M' + ' L'.join(f'{x:.1f} {y:.1f}' for x, y in pts)
+    dots = ''
+    for cx, a, s, lane, dur in bumps:
+        r = max(6, min(13, 6 + dur * 2.5))
+        cls = 'dot-au' if lane == 'au' else 'dot-fam'
+        dots += f'<circle class="{cls}" cx="{cx:.1f}" cy="{BASE - a:.1f}" r="{r:.1f}"/>'
+    motif = ''
+    if d.get('motif') == 'sun':
+        motif = ('<g class="ink-line" fill="none" stroke-width="1.6" stroke-linecap="round"><circle cx="140" cy="58" r="14"/>'
+                 '<path d="M140 34v-8 M140 90v-8 M116 58h-8 M172 58h-8 M123 41l-6-6 M163 81l-6-6 M157 41l6-6 M117 81l6-6"/></g>')
+    flag = ('<path class="ink-line" d="M826 118 V 72" stroke-width="1.8" fill="none"/>'
+            '<path class="clay-fill" d="M826 73 L 838 79 L 826 85 Z"/>') if d.get('flag', True) else ''
+    return (f'<svg class="terrain" viewBox="0 0 840 160" role="img" aria-label="Shape of the day">'
+            f'<path class="ink-line" d="{path}" fill="none" stroke-width="2.2" stroke-linecap="round"/>'
+            f'{motif}{dots}{flag}</svg>')
+
+
+# ---------- calendar ----------
+def calendar(d):
+    H0, H1 = 7, 21
+    span = H1 - H0
+    ticks = ''.join(f'<span style="left:{(h - H0) / span * 100:.2f}%">{hour_label(h).replace(":00", "")}</span>' for h in range(H0, H1 + 1, 2))
+    out = ['<div class="cal">']
+    for day in d['days']:
+        lanes = ''
+        for lane, label in (('au', 'AU'), ('family', 'Family')):
+            blocks = ''
+            for ev in [x for x in day['events'] if x['lane'] == lane]:
+                left = (max(ev['start'], H0) - H0) / span * 100
+                width = max(1.2, (min(ev['end'], H1) - max(ev['start'], H0)) / span * 100)
+                tip = f'{hour_label(ev["start"])} to {hour_label(ev["end"])} · {ev["title"]}'
+                blocks += f'<span class="blk blk-{lane}" style="left:{left:.2f}%;width:{width:.2f}%" title="{e(tip)}"></span>'
+            lanes += f'<div class="lane"><span class="lane-l">{label}</span><div class="track">{blocks}</div></div>'
+        evs = sorted(day['events'], key=lambda x: x['start'])
+        rows = ''.join(
+            f'<li><span class="sw sw-{ev["lane"]}" aria-hidden="true"></span><span class="t">{hour_label(ev["start"])}</span>'
+            f'<span class="d">{link(ev["title"], ev.get("url"))}<small>{e(ev.get("sub", ""))}</small></span></li>' for ev in evs)
+        if not evs:
+            rows = '<li class="quiet">No timed events.</li>'
+        allday = ''.join(f'<li>{link(a["title"], a.get("url"))}</li>' for a in day.get('allday', []))
+        kate = day.get('kateCount', 0)
+        kate_line = f'<p class="kate">Kate also has {kate} work, law school, and chapter items on the Family Calendar.</p>' if kate else ''
+        out.append(f'''<div class="cal-day"><div class="cal-h"><b>{e(day["label"])}</b><span>{e(day["date"])}</span></div>
+<div class="axis">{ticks}</div>{lanes}
+<ul class="cal-list">{rows}</ul>{f'<ul class="allday">{allday}</ul>' if allday else ''}{kate_line}</div>''')
+    out.append('<p class="legend"><span class="sw sw-au"></span>AU calendar <span class="sw sw-family"></span>Family Calendar</p></div>')
+    return ''.join(out)
+
+
+# ---------- generic list ----------
+def items(lst, numbered=True):
+    out = '<ol class="list">'
+    for i, it in enumerate(lst, 1):
+        meta = ''
+        if it.get('who'):
+            meta = f'<span class="meta">{e(it["who"])}{" · " + e(it["where"]) if it.get("where") else ""}{" · " + e(it["when"]) if it.get("when") else ""}</span>'
+        out += (f'<li><span class="n">{i if numbered else ""}</span><div class="li-b"><h3>{link(it["title"], it.get("url"))}</h3>{meta}'
+                f'<p>{e(it["body"])}</p>{("<p class=b>" + btn(it.get("button")) + "</p>") if it.get("button") else ""}</div></li>')
+    return out + '</ol>'
+
+
+def waiting(d):
+    mx = max(10, max(w['days'] for w in d['waiting']))
+    scale = math.ceil(mx / 10) * 10
+    rows = ''
+    for w in d['waiting']:
+        pct = w['days'] / scale * 100
+        nudge = w['days'] > 3
+        rows += (f'<li><div class="w-h"><a href="{e(w["url"])}">{e(w["title"])}</a>'
+                 f'{"<span class=pill-warn>&#9650; Nudge</span>" if nudge else ""}</div>'
+                 f'<div class="w-bar"><span style="width:{pct:.1f}%" title="{w["days"]} business days"></span><b>{w["days"]} business days</b></div>'
+                 f'<p>{e(w["who"])} · since {e(w["since"])}. {e(w["note"])}</p></li>')
+    return f'<ul class="wait">{rows}</ul>'
+
+
+def yesterday(d):
+    return '<ul class="yday">' + ''.join(f'<li><span class="tag">{e(y["tag"])}</span><span>{e(y["text"])}</span></li>' for y in d['yesterday']) + '</ul>'
+
+
+def ac(d):
+    a = d['ac']
+    tiles = ''
+    for au in a['automations']:
+        active = au['status'] == 'Active'
+        pill = '<span class="pill-ok">&#9679; Active</span>' if active else '<span class="pill-off">&#9675; Inactive</span>'
+        rates = (f'<div class="kv"><span>Open</span><b>{au["open"]:.0f}%</b></div><div class="kv"><span>Click</span><b>{au["click"]:.0f}%</b></div>'
+                 if au.get('sends') else '')
+        tiles += (f'<div class="tile{" off" if not active else ""}"><div class="tile-h"><b>{e(au["name"])}</b>{pill}</div>'
+                  f'<div class="kvs"><div class="kv"><span>In it now</span><b>{au["now"]:,}</b></div><div class="kv"><span>Entered</span><b>{au["entered"]:,}</b></div>'
+                  f'<div class="kv"><span>Sends</span><b>{au["sends"]:,}</b></div>{rates}</div><p>{e(au["note"])}</p></div>')
+    ug = a['automations'][0]
+    rows = ''
+    OMAX, CMAX = 50, 10
+    for name, sends, op, cl in ug['emails']:
+        low = sends < 50
+        rows += (f'<div class="bar-row{" low" if low else ""}"><span class="bl">{e(name)}<small>{sends:,} sends</small></span>'
+                 f'<span class="bt"><span class="bo" style="width:{min(op, OMAX) / OMAX * 100:.1f}%" title="{e(name)}: {op:.1f}% open, {sends} sends"></span><em>{op:.0f}%</em></span>'
+                 f'<span class="bt"><span class="bc" style="width:{min(cl, CMAX) / CMAX * 100:.1f}%" title="{e(name)}: {cl:.1f}% click, {sends} sends"></span><em>{cl:.1f}%</em></span></div>')
+    chart = (f'<figure class="ug"><figcaption>UG Inquiry nurture, by touchpoint <small>lifetime, as of {e(a["asOf"])}; faded rows have under 50 sends</small></figcaption>'
+             f'<div class="bar-row head"><span></span><span>Open rate <small>0–50%</small></span><span>Click rate <small>0–10%</small></span></div>{rows}</figure>')
+    flag = f'<p class="flag"><span class="pill-warn">&#9650; Check</span> {e(a["flag"])}</p>' if a.get('flag') else ''
+    return f'{flag}<div class="tiles">{tiles}</div>{chart}'
+
+
+def news(d):
+    return '<div class="news">' + ''.join(
+        f'<article><span class="src">{e(n["source"])} · {e(n["date"])}</span><h3>{link(n["title"], n["url"])}</h3>'
+        f'<p>{e(n["summary"])}</p><p class="why">For AU: {e(n["why"])}</p></article>' for n in d['news']) + '</div>'
+
+
+def deletions(d):
+    rows = ''
+    for i, dl in enumerate(d['deletions']):
+        seed = (f"Help me unsubscribe from {dl['sender']} emails in my personal Gmail. Find the most recent message from {dl['sender']}, "
+                "locate its unsubscribe link or List-Unsubscribe address, and either complete the unsubscribe in a browser if one is available "
+                "or give me the link to open. Then move that sender's messages in my inbox to Trash, but nothing from real people, receipts, "
+                "financial records, or security notices. You can reach my personal Gmail and the web. Done is a short note of what was "
+                "unsubscribed and how many threads went to Trash.")
+        n = len(dl['threads'])
+        rows += (f'<li data-del="{i}"><div class="d-b"><b>{e(dl["sender"])}</b><span>{e(dl["what"])}</span></div>'
+                 f'<span class="cnt">{n}</span><div class="d-a"><button type="button" class="btn-sm trash" id="trash-{i}">Move {n} to Trash</button>'
+                 f'<a class="btn-sm ghost" href="{e(seed_href(seed))}">Unsubscribe</a></div><p class="d-msg" aria-live="polite"></p></li>')
+    return (f'<ul class="dels">{rows}</ul><p class="note">Move to Trash asks once more before it acts, and Gmail keeps trashed mail for 30 days. '
+            'Unsubscribe opens Claude to find the link for you.</p>')
+
+
+CSS = r'''
+/* Layout: two bands. A calm wash band for the day's shape, then a working band of
+   sections in one 860px column; the priorities list is the one interactive centerpiece. */
+:root{
+  --bg:#FCFCFB; --wash:#F6F5F1; --card:#FFFFFF; --ink:#2E2C27; --soft:#5F5E57; --mute:#8E8D84;
+  --hair:#E4E3DC; --edge:#DAD9D2; --clay:#C6613F; --clay-h:#AE5133; --on-clay:#FFFFFF;
+  --au:#2F6F9F; --fam:#B0761C; --open:#2F6F9F; --click:#B0761C;
+  --ok:#2E7D4F; --ok-bg:#E7F3EC; --warn:#9A5B00; --warn-bg:#FBEFD9; --off:#6B6A63; --off-bg:#EEEDE8;
+  --chip:#F1F0EB; --crit:#B3261E; --crit-bg:#FBE9E7;
+  --f-display:"Fraunces",Georgia,serif; --f-body:-apple-system,"Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1A1A19; --wash:#222220; --card:#262624; --ink:#EDEBE4; --soft:#B9B7AE; --mute:#8C8A82;
+  --hair:#34332F; --edge:#3B3A36; --clay:#D2704E; --clay-h:#E0805E; --on-clay:#1A1A19;
+  --au:#4F93C6; --fam:#B98228; --open:#4F93C6; --click:#B98228;
+  --ok:#7CC79A; --ok-bg:#1F3328; --warn:#E3B062; --warn-bg:#3A2E18; --off:#A3A19A; --off-bg:#2E2D2A;
+  --chip:#2E2D2A; --crit:#F08C82; --crit-bg:#3D2321; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1A1A19; --wash:#222220; --card:#262624; --ink:#EDEBE4; --soft:#B9B7AE; --mute:#8C8A82;
+  --hair:#34332F; --edge:#3B3A36; --clay:#D2704E; --clay-h:#E0805E; --on-clay:#1A1A19;
+  --au:#4F93C6; --fam:#B98228; --open:#4F93C6; --click:#B98228;
+  --ok:#7CC79A; --ok-bg:#1F3328; --warn:#E3B062; --warn-bg:#3A2E18; --off:#A3A19A; --off-bg:#2E2D2A;
+  --chip:#2E2D2A; --crit:#F08C82; --crit-bg:#3D2321; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--f-body)}
+a{color:inherit}
+.band{padding-inline:16px}
+.top{background:var(--wash);border-bottom:1px solid var(--edge)}
+.wrap{max-width:860px;margin:0 auto;padding-block:36px 40px}
+.date{color:var(--soft);font-size:13px;margin:0 0 8px}
+h1{font-family:var(--f-display);font-weight:600;font-size:38px;line-height:1.15;margin:0 0 14px;text-wrap:balance}
+.terrain{width:100%;height:auto;display:block}
+.ink-line{stroke:var(--ink)} .clay-fill{fill:var(--clay)}
+.dot-au{fill:var(--ink)} .dot-fam{fill:var(--fam)}
+.acts{display:grid;grid-template-columns:repeat(3,1fr);margin-top:6px}
+.act{padding:0 18px;border-left:1px solid var(--hair);min-width:0}.act:first-child{border-left:0;padding-left:0}
+.act b{display:block;font-size:13px;margin-bottom:4px}.act p{margin:0;color:var(--soft);font-size:14px}
+section{margin-top:40px}
+section:first-child{margin-top:0}
+h2{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--soft);margin:0 0 14px;display:flex;align-items:baseline;gap:10px}
+h2 small{font-weight:400;letter-spacing:0;text-transform:none;color:var(--mute);font-size:13px}
+h3{margin:0 0 3px;font-size:15px;font-weight:600;text-wrap:balance}
+h3 a{text-decoration:none}h3 a:hover{text-decoration:underline}
+p{margin:0}
+ol.list{list-style:none;margin:0;padding:0}
+ol.list>li{display:flex;gap:14px;padding:12px 0;border-top:1px solid var(--hair)}
+ol.list>li:first-child{border-top:0}
+.n{color:var(--mute);font-size:14px;min-width:14px;padding-top:2px;font-variant-numeric:tabular-nums}
+.li-b{min-width:0}.li-b p{color:var(--soft)}
+.meta{display:block;font-size:12px;color:var(--mute);margin-bottom:2px}
+.b{margin-top:10px!important}
+.btn{display:inline-block;background:var(--clay);border:1px solid var(--clay);color:var(--on-clay);border-radius:8px;padding:9px 16px;font:500 13px var(--f-body);text-decoration:none;cursor:pointer}
+.btn:hover{background:var(--clay-h);border-color:var(--clay-h)}
+.btn-sm{display:inline-flex;align-items:center;gap:6px;border-radius:7px;padding:6px 11px;font:500 12.5px var(--f-body);cursor:pointer;text-decoration:none;border:1px solid var(--edge);background:var(--card);color:var(--ink);white-space:nowrap}
+.btn-sm:hover{border-color:var(--ink)}
+.btn-sm.primary{background:var(--clay);border-color:var(--clay);color:var(--on-clay)}
+.btn-sm.primary:hover{background:var(--clay-h)}
+.btn-sm.armed{background:var(--crit);border-color:var(--crit);color:var(--bg)}
+.btn-sm.ghost{background:transparent}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--au);outline-offset:2px}
+.note{color:var(--mute);font-size:13px;margin-top:8px}
+/* calendar */
+.cal{display:grid;gap:18px}
+.cal-day{background:var(--card);border:1px solid var(--hair);border-radius:10px;padding:14px 16px}
+.cal-h{display:flex;gap:10px;align-items:baseline;margin-bottom:8px}.cal-h span{color:var(--mute);font-size:13px}
+.axis{position:relative;height:16px;margin-left:56px;font-size:11px;color:var(--mute);font-variant-numeric:tabular-nums}
+.axis span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.axis span:first-child{transform:none}.axis span:last-child{transform:translateX(-100%)}
+.lane{display:flex;align-items:center;gap:8px;margin-top:4px}
+.lane-l{width:48px;font-size:12px;color:var(--soft);text-align:right}
+.track{position:relative;flex:1;height:18px;background:var(--chip);border-radius:4px}
+.blk{position:absolute;top:2px;bottom:2px;border-radius:4px}
+.blk-au{background:var(--au)}.blk-family{background:var(--fam)}
+.cal-list{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:6px}
+.cal-list li{display:grid;grid-template-columns:10px 72px 1fr;gap:8px;align-items:baseline;font-size:14px}
+.cal-list .t{color:var(--soft);font-variant-numeric:tabular-nums}
+.cal-list .d{min-width:0}.cal-list small{display:block;color:var(--mute);font-size:12.5px}
+.cal-list a{text-decoration:none}.cal-list a:hover{text-decoration:underline}
+.cal-list .quiet{display:block;color:var(--mute)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:baseline}
+.sw-au{background:var(--au)}.sw-family{background:var(--fam)}
+.allday{list-style:none;margin:10px 0 0;padding:10px 0 0;border-top:1px dashed var(--hair);display:flex;flex-wrap:wrap;gap:6px}
+.allday li{font-size:12.5px;background:var(--chip);border-radius:6px;padding:3px 8px}
+.allday a{text-decoration:none}
+.kate{font-size:12.5px;color:var(--mute);margin-top:8px}
+.legend{font-size:12.5px;color:var(--soft);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.legend .sw{margin-left:8px}.legend .sw:first-child{margin-left:0}
+/* priorities */
+.prio-wrap{background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:6px 6px 12px}
+#prio-list{list-style:none;margin:0;padding:0}
+.task{display:grid;grid-template-columns:28px 22px 1fr auto;gap:10px;align-items:start;padding:12px 10px;border-radius:9px;border-bottom:1px solid var(--hair);background:var(--card)}
+.task:last-child{border-bottom:0}
+.task.dragging{box-shadow:0 6px 18px rgba(0,0,0,.18);position:relative;z-index:2;border-bottom-color:transparent}
+.grip{width:28px;height:34px;border:0;background:transparent;color:var(--mute);cursor:grab;touch-action:none;border-radius:6px;display:grid;place-items:center}
+.grip:hover{background:var(--chip);color:var(--ink)}
+.grip:active{cursor:grabbing}
+.rk{font:600 15px var(--f-display);color:var(--clay);padding-top:6px;text-align:center;font-variant-numeric:tabular-nums}
+.tb{min-width:0;padding-top:4px}
+.tb .tt{font-weight:600;text-decoration:none}.tb .tt:hover{text-decoration:underline}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0 4px}
+.chip{font-size:11.5px;border-radius:5px;padding:1px 7px;background:var(--chip);color:var(--soft)}
+.chip.crit{background:var(--crit-bg);color:var(--crit);font-weight:600}
+.chip.high{background:var(--warn-bg);color:var(--warn);font-weight:600}
+.chip.late{background:var(--crit-bg);color:var(--crit)}
+.chip.soon{background:var(--warn-bg);color:var(--warn)}
+.chip.mine{background:var(--ok-bg);color:var(--ok)}
+.why{font-size:13.5px;color:var(--soft)}
+.ta{display:flex;gap:6px;align-items:center;padding-top:2px}
+.mv{width:30px;height:30px;padding:0;justify-content:center}
+.add{display:flex;gap:8px;margin:10px 10px 0}
+.add input{flex:1;min-width:0;font:15px var(--f-body);padding:8px 11px;border:1px solid var(--edge);border-radius:8px;background:var(--bg);color:var(--ink)}
+.prio-foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 10px 0;font-size:12.5px;color:var(--mute)}
+#prio-done{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:6px}
+#prio-done li{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--soft);padding:6px 10px;border-radius:8px;background:var(--ok-bg)}
+#prio-done li .x{flex:1;min-width:0;text-decoration:line-through}
+#prio-done .check{color:var(--ok);font-weight:700}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:8px;font-size:13.5px;max-width:min(92vw,520px);z-index:9}
+/* waiting */
+.wait{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.w-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-weight:600}
+.w-h a{text-decoration:none}.w-h a:hover{text-decoration:underline}
+.w-bar{display:flex;align-items:center;gap:10px;margin:6px 0 4px}
+.w-bar span{display:block;height:10px;border-radius:0 4px 4px 0;background:var(--soft);min-width:4px}
+.w-bar b{font-size:12.5px;font-weight:500;color:var(--soft);white-space:nowrap;font-variant-numeric:tabular-nums}
+.wait p{font-size:13.5px;color:var(--soft)}
+.pill-warn,.pill-ok,.pill-off{font-size:11.5px;font-weight:600;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.pill-warn{background:var(--warn-bg);color:var(--warn)}
+.pill-ok{background:var(--ok-bg);color:var(--ok)}
+.pill-off{background:var(--off-bg);color:var(--off)}
+/* yesterday */
+.yday{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.yday li{display:grid;grid-template-columns:76px 1fr;gap:10px;align-items:baseline;font-size:14px;color:var(--soft)}
+.tag{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--mute);border:1px solid var(--hair);border-radius:5px;padding:1px 6px;text-align:center}
+/* activecampaign */
+.flag{font-size:14px;color:var(--soft);margin-bottom:14px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.tile{background:var(--card);border:1px solid var(--hair);border-radius:10px;padding:12px 14px;min-width:0}
+.tile.off{background:transparent;border-style:dashed}
+.tile-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:8px}
+.kvs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 6px;margin-bottom:8px}
+.kv span{display:block;font-size:11.5px;color:var(--mute)}
+.kv b{font-size:16px;font-variant-numeric:tabular-nums}
+.kv.wide{grid-column:span 2}
+.tile p{font-size:13px;color:var(--soft)}
+.ug{margin:18px 0 0;background:var(--card);border:1px solid var(--hair);border-radius:10px;padding:14px 16px;overflow-x:auto}
+.ug figcaption{font-weight:600;margin-bottom:10px}.ug figcaption small{display:block;font-weight:400;color:var(--mute);font-size:12.5px}
+.bar-row{display:grid;grid-template-columns:minmax(150px,1.3fr) 1fr 1fr;gap:12px;align-items:center;padding:4px 0;min-width:520px}
+.bar-row.head{font-size:12px;color:var(--soft);border-bottom:1px solid var(--hair);padding-bottom:6px;margin-bottom:2px}
+.bar-row.head small{color:var(--mute)}
+.bar-row.low{opacity:.55}
+.bl{font-size:13px;min-width:0}.bl small{display:block;color:var(--mute);font-size:11.5px;font-variant-numeric:tabular-nums}
+.bt{display:flex;align-items:center;gap:6px;background:linear-gradient(to right,var(--hair) 1px,transparent 1px) 0 0/50% 100%;}
+.bo,.bc{display:block;height:12px;border-radius:0 4px 4px 0;min-width:2px}
+.bo{background:var(--open)}.bc{background:var(--click)}
+.bt em{font-style:normal;font-size:12px;color:var(--soft);font-variant-numeric:tabular-nums}
+.bar-row:hover:not(.head){background:var(--chip)}
+/* news */
+.news{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.news article{border-top:2px solid var(--ink);padding-top:10px;min-width:0}
+.src{font-size:12px;color:var(--mute)}
+.news p{font-size:14px;color:var(--soft);margin-top:4px}.news .why{color:var(--ink)}
+/* deletions */
+.dels{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.dels li{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:9px 0;border-top:1px solid var(--hair)}
+.dels li:first-child{border-top:0}
+.d-b{min-width:0}.d-b b{display:block;font-size:14px}.d-b span{font-size:12.5px;color:var(--mute)}
+.cnt{font:600 13px var(--f-body);background:var(--chip);border-radius:999px;min-width:26px;text-align:center;padding:2px 8px;font-variant-numeric:tabular-nums}
+.d-a{display:flex;gap:6px}
+.d-msg{grid-column:1/-1;font-size:12.5px;color:var(--soft)}
+.d-msg:empty{display:none}
+.dels li.gone .d-b{opacity:.5;text-decoration:line-through}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.two>div{min-width:0}
+@media (max-width:640px){
+  h1{font-size:29px}
+  .acts{grid-template-columns:1fr}.act{border-left:0;border-top:1px solid var(--hair);padding:10px 0}.act:first-child{border-top:0}
+  .news,.two{grid-template-columns:1fr}
+  .task{grid-template-columns:26px 18px 1fr;}
+  .ta{grid-column:2/-1}
+  .dels li{grid-template-columns:1fr auto}
+  .d-a{grid-column:1/-1}
+  .yday li{grid-template-columns:1fr}.tag{justify-self:start}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+'''
+
+JS = r'''
+(function(){
+  const D = JSON.parse(document.getElementById('brief-data').textContent);
+  const $ = s => document.querySelector(s);
+  const listEl = $('#prio-list'), doneEl = $('#prio-done'), statusEl = $('#prio-status');
+  let db = null, mcp = null, tasks = [], dragging = false, toastT = null;
+
+  function toast(msg){ let t=$('.toast'); if(!t){t=document.createElement('div');t.className='toast';t.setAttribute('role','status');document.body.appendChild(t);} t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>{t.hidden=true},4200); }
+  function esc(s){ const d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+  function dayDiff(iso){ if(!iso) return null; const a=new Date(D.date+'T12:00:00'), b=new Date(iso+'T12:00:00'); return Math.round((b-a)/864e5); }
+  function dueChip(iso){ const n=dayDiff(iso); if(n===null) return ''; const wd=new Date(iso+'T12:00:00').toLocaleDateString('en-US',{weekday:'short'});
+    if(n<0) return '<span class="chip late">'+(-n)+(n===-1?' day':' days')+' late</span>';
+    if(n===0) return '<span class="chip late">due today</span>';
+    if(n===1) return '<span class="chip soon">due tomorrow</span>';
+    if(n<=3) return '<span class="chip soon">due '+wd+'</span>';
+    return '<span class="chip">due '+wd+'</span>'; }
+  function prChip(p){ if(!p) return ''; const c=p==='Critical'?'crit':(p==='High'?'high':''); return '<span class="chip '+c+'">'+esc(p)+'</span>'; }
+  const visible = () => tasks.filter(t=>t.active!==false && !t.done).sort((a,b)=>(a.rank??999)-(b.rank??999));
+  const doneToday = () => tasks.filter(t=>t.done && t.doneDay===D.date);
+  const find = id => tasks.find(t=>t.id===id);
+  const GRIP = '<svg width="12" height="18" viewBox="0 0 12 18" aria-hidden="true"><g fill="currentColor"><circle cx="3" cy="3" r="1.6"/><circle cx="9" cy="3" r="1.6"/><circle cx="3" cy="9" r="1.6"/><circle cx="9" cy="9" r="1.6"/><circle cx="3" cy="15" r="1.6"/><circle cx="9" cy="15" r="1.6"/></g></svg>';
+
+  function render(){
+    const v = visible();
+    listEl.innerHTML = v.map((t,i)=>{
+      const title = t.url ? '<a class="tt" href="'+esc(t.url)+'">'+esc(t.title)+'</a>' : '<span class="tt">'+esc(t.title)+'</span>';
+      const chips = (t.source==='custom' ? '<span class="chip mine">Your task</span>' : '') + prChip(t.priority) + (t.status?'<span class="chip">'+esc(t.status)+'</span>':'') + dueChip(t.due) + (t.board?'<span class="chip">'+esc(t.board)+'</span>':'');
+      return '<li class="task" data-id="'+esc(t.id)+'"><button type="button" class="grip" aria-label="Drag to reorder '+esc(t.title)+'">'+GRIP+'</button>'+
+        '<span class="rk">'+(i+1)+'</span><div class="tb">'+title+'<div class="chips">'+chips+'</div>'+(t.why?'<p class="why">'+esc(t.why)+'</p>':'')+'</div>'+
+        '<div class="ta"><button type="button" class="btn-sm mv up" aria-label="Move up"'+(i===0?' disabled':'')+'>&uarr;</button><button type="button" class="btn-sm mv dn" aria-label="Move down"'+(i===v.length-1?' disabled':'')+'>&darr;</button>'+
+        '<button type="button" class="btn-sm primary done">&#10003; Done</button></div></li>'; }).join('') || '<li class="task"><span></span><span></span><p class="why">Nothing open. Add a task below.</p></li>';
+    const d = doneToday();
+    doneEl.innerHTML = d.map(t=>'<li data-id="'+esc(t.id)+'"><span class="check">&#10003;</span><span class="x">'+esc(t.title)+'</span><button type="button" class="btn-sm ghost undo">Undo</button></li>').join('');
+  }
+  function renumber(){ [...listEl.children].forEach((li,i)=>{ const r=li.querySelector('.rk'); if(r) r.textContent=i+1; }); }
+
+  async function save(t){ if(!db) return; const {id,...body}=t; try{ await db.doc('tasks/'+id).set(body); }catch(err){ statusEl.textContent = err && err.code==='quota_exceeded' ? 'The task store is full; remove some done tasks.' : 'Could not save that change. It will be lost on reload.'; } }
+  async function persistOrder(ids){
+    const changed=[]; ids.forEach((id,i)=>{ const t=find(id); if(t && t.rank!==i+1){ t.rank=i+1; t.userRanked=true; changed.push(t);} });
+    render(); for(const t of changed){ await save(t); }
+    if(changed.length) toast('Order saved.');
+  }
+  function mcpMsg(err, server){
+    const c = err && err.code;
+    if(c==='needs_reauth') return 'Reconnect '+server+' in claude.ai Settings → Connectors, then try again.';
+    if(c==='server_not_connected') return 'Add '+server+' in claude.ai Settings → Connectors to do this from the page.';
+    if(c==='not_in_manifest'||c==='approval_required') return server+' is not allowed for this page. Turn it on in the page’s permissions and try again.';
+    if(c==='blocked_by_policy') return 'Your organization blocks this '+server+' action.';
+    if(c==='tool_error') return server+' refused the change: '+(err.message||'no details');
+    if(c==='server_unavailable') return server+' did not answer. Check it before trying again; the change may have gone through.';
+    return 'Could not reach '+server+' ('+(c||'unknown')+').';
+  }
+  async function setMonday(t,label){
+    if(!mcp) return 'monday.com is not reachable from this view, so the item there is unchanged.';
+    try{ await mcp.callTool('monday.com','change_item_column_values',{boardId:Number(t.boardId),itemId:Number(t.id),columnValues:JSON.stringify({[t.statusCol]:{label}})}); return true; }
+    catch(err){ return mcpMsg(err,'monday.com'); }
+  }
+  async function markDone(id){
+    const t=find(id); if(!t) return; t.done=true; t.doneDay=D.date; t.prevStatus=t.status||''; t.mondaySynced=false; render();
+    let msg='Marked done.';
+    if(t.source!=='custom' && t.boardId && t.statusCol){ const r=await setMonday(t,'Done'); if(r===true){ t.mondaySynced=true; msg='Marked done here and in monday.'; } else msg='Marked done here. '+r; }
+    await save(t); toast(msg);
+  }
+  async function undo(id){
+    const t=find(id); if(!t) return; t.done=false; t.doneDay=''; render(); let msg='Back on the list.';
+    if(t.mondaySynced && t.prevStatus){ const r=await setMonday(t,t.prevStatus); msg = r===true ? 'Back on the list; monday status restored to '+t.prevStatus+'.' : 'Back on the list. '+r; t.mondaySynced=false; }
+    await save(t); toast(msg);
+  }
+  async function addTask(title){
+    title=title.trim(); if(!title) return;
+    const rank=Math.max(0,...visible().map(t=>t.rank||0))+1;
+    const t={id:'c-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),title,source:'custom',active:true,done:false,rank,created:D.date,why:'',userRanked:true};
+    tasks.push(t); render(); await save(t); toast('Added to your priorities.');
+  }
+
+  listEl.addEventListener('click', e=>{
+    const li=e.target.closest('li.task'); if(!li||!li.dataset.id) return; const id=li.dataset.id;
+    if(e.target.closest('.done')) return markDone(id);
+    const ids=visible().map(t=>t.id), i=ids.indexOf(id);
+    if(e.target.closest('.up') && i>0){ [ids[i-1],ids[i]]=[ids[i],ids[i-1]]; persistOrder(ids); }
+    if(e.target.closest('.dn') && i<ids.length-1){ [ids[i+1],ids[i]]=[ids[i],ids[i+1]]; persistOrder(ids); }
+  });
+  doneEl.addEventListener('click', e=>{ const li=e.target.closest('li'); if(li && e.target.closest('.undo')) undo(li.dataset.id); });
+  listEl.addEventListener('pointerdown', e=>{
+    const grip=e.target.closest('.grip'); if(!grip) return; e.preventDefault();
+    const li=grip.closest('li'); dragging=true; li.classList.add('dragging');
+    try{ grip.setPointerCapture(e.pointerId); }catch(_){}
+    const move=ev=>{ const y=ev.clientY; let before=null; for(const it of listEl.children){ if(it===li) continue; const r=it.getBoundingClientRect(); if(y<r.top+r.height/2){ before=it; break; } } if(before!==li.nextSibling) { listEl.insertBefore(li,before); renumber(); } };
+    const up=()=>{ grip.removeEventListener('pointermove',move); grip.removeEventListener('pointerup',up); grip.removeEventListener('pointercancel',up); li.classList.remove('dragging'); dragging=false; persistOrder([...listEl.children].map(x=>x.dataset.id).filter(Boolean)); };
+    grip.addEventListener('pointermove',move); grip.addEventListener('pointerup',up); grip.addEventListener('pointercancel',up);
+  });
+  $('#add-form').addEventListener('submit', e=>{ e.preventDefault(); const inp=$('#new-task'); addTask(inp.value); inp.value=''; });
+
+  // Mail: move a sender's threads to Trash (two-step confirm), unsubscribe goes through Claude.
+  document.querySelectorAll('.trash').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const li=b.closest('li'), i=Number(li.dataset.del), del=D.deletions[i], msg=li.querySelector('.d-msg');
+      if(!b.classList.contains('armed')){ b.classList.add('armed'); b.dataset.label=b.textContent; b.textContent='Confirm: Trash '+del.threads.length; setTimeout(()=>{ if(b.classList.contains('armed')){ b.classList.remove('armed'); b.textContent=b.dataset.label; } },6000); return; }
+      b.classList.remove('armed'); b.disabled=true; b.textContent='Moving…';
+      if(!mcp){ msg.textContent='Gmail is not reachable from this view. Use Unsubscribe to have Claude do it.'; b.disabled=false; b.textContent=b.dataset.label; return; }
+      let ok=0, err=null;
+      for(const id of del.threads){ try{ await mcp.callTool('Gmail','trash_thread',{threadId:id}); ok++; }catch(x){ err=x; break; } }
+      if(err){ msg.textContent=(ok?ok+' moved to Trash. ':'')+mcpMsg(err,'Gmail'); b.disabled=false; b.textContent=b.dataset.label; }
+      else { msg.textContent=ok+' moved to Trash.'; b.textContent='In Trash'; li.classList.add('gone'); }
+    });
+  });
+
+  // Start from today's list in the page; the store replaces it once it answers.
+  tasks = D.tasks.map(t=>Object.assign({source:'monday',active:true,done:false},t));
+  render();
+  statusEl.textContent='Connecting to your saved order…';
+  const C = window.claude;
+  if(!C || !C.use){ statusEl.textContent='Open this page on claude.ai to save your order and done tasks.'; return; }
+  C.use('mcp').then(m=>{ mcp=m; }).catch(()=>{});
+  C.use('db').then(d=>{
+    db=d; if(!db){ statusEl.textContent='Saving is off in this view, so changes last until you reload.'; return; }
+    statusEl.textContent='Your order and done tasks are saved.';
+    db.collection('tasks').onSnapshot(snap=>{
+      if(snap.empty) return;
+      tasks = snap.docs.map(s=>Object.assign({id:s.id}, s.data()));
+      if(!dragging) render();
+    }, err=>{ statusEl.textContent = 'Saved order is unavailable right now ('+err.code+').'; });
+  }).catch(()=>{ statusEl.textContent='Saving is off in this view, so changes last until you reload.'; });
+})();
+'''
+
+
+def build(d):
+    f64 = font_b64()
+    font_css = (f'@font-face{{font-family:"Fraunces";src:url(data:font/woff2;base64,{f64}) format("woff2");font-weight:600;font-style:normal}}' if f64 else '')
+    acts = ''.join(f'<div class="act"><b>{e(a["time"])}</b><p>{e(a["text"])}</p></div>' for a in d['acts'])
+    js_data = {'date': d['date'], 'tasks': d['tasks'], 'deletions': d['deletions']}
+    data_json = json.dumps(js_data).replace('</', '<\\/')
+    fam_today = d['days'][0]
+    pmail_html = items(d['pmail'])
+    secs = []
+    if d.get('weekly'):
+        secs.append(f'<section><h2>{e(d["weekly"]["title"])}</h2>{d["weekly"]["html"]}</section>')
+    secs.append(f'<section><h2>Today and tomorrow</h2>{calendar(d)}</section>')
+    if d.get('meetings'):
+        secs.append(f'<section><h2>Meetings today</h2>{items(d["meetings"])}</section>')
+    secs.append(f'<section><h2>Needs attention</h2>{items(d["needs"])}</section>')
+    secs.append(f'''<section id="priorities"><h2>Today’s priorities <small>drag to reorder, or add your own</small></h2>
+<div class="prio-wrap"><ol id="prio-list" aria-label="Priorities, in order"></ol>
+<form class="add" id="add-form" autocomplete="off"><label for="new-task" class="sr" hidden>New task</label>
+<input id="new-task" name="new-task" placeholder="Add a task that isn’t listed…" maxlength="160"><button class="btn-sm primary" type="submit">Add</button></form>
+<div class="prio-foot"><span id="prio-status" aria-live="polite"></span><span>Done also sets the item to Done in monday.</span></div></div>
+<ul id="prio-done" aria-label="Done today"></ul><p class="note">{e(d.get("goalsNote", ""))}</p></section>''')
+    secs.append(f'<section><div class="two"><div><h2>Missed in monday</h2>{items(d["missed"])}</div><div><h2>Resolved</h2>{items(d["resolved"])}</div></div></section>')
+    secs.append(f'<section><h2>Waiting on others</h2>{waiting(d)}</section>')
+    secs.append(f'<section><h2>Yesterday’s work</h2>{yesterday(d)}</section>')
+    secs.append(f'<section><h2>ActiveCampaign <small>ENR nurture automations</small></h2>{ac(d)}</section>')
+    secs.append(f'<section><h2>Higher ed news</h2>{news(d)}</section>')
+    secs.append(f'<section><h2>Personal email, important</h2>{pmail_html}</section>')
+    secs.append(f'<section><h2>Personal email, suggested deletions</h2>{deletions(d)}</section>')
+    secs.append(f'<section><h2>Could hand to Claude</h2>{items(d["hand"])}</section>')
+    return f'''<title>Morning Brief</title>
+<style>{font_css}{CSS}</style>
+<div class="band top"><div class="wrap">
+<p class="date">{e(d["dayDate"])}</p>
+<h1>{e(d["headline"])}</h1>
+{terrain(d)}
+<div class="acts">{acts}</div>
+</div></div>
+<div class="band"><div class="wrap">
+{"".join(secs)}
+</div></div>
+<script type="application/json" id="brief-data">{data_json}</script>
+<script>{JS}</script>'''
+
+
+if __name__ == '__main__':
+    data = json.loads(pathlib.Path(sys.argv[1]).read_text())
+    body = build(data)
+    pathlib.Path(sys.argv[2]).write_text(body)
+    if '--preview' in sys.argv:
+        p = sys.argv[sys.argv.index('--preview') + 1]
+        pathlib.Path(p).write_text('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>' + body + '</body></html>')
+    print('built', len(body))
