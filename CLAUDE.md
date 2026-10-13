@@ -20,5 +20,7 @@ This vault is Claude's working memory for Brent's work at Ashland University (AU
 - `Weekly/`: one Friday review per week (`YYYY-Www.md`)
 - `.brief/`: the morning brief page builder (see `.brief/README.md`); hidden in Obsidian
 
-## Commit messages
-Use `claude: <what changed>`, e.g. `claude: daily note 2026-10-14`.
+## Commits and pushes
+- Commit and push vault changes straight to `main` so they sync to Obsidian. Brent approved this on 2026-10-13. No feature branches or pull requests for routine vault updates, even if a session assigns a branch.
+- Pull `main` before writing, so Brent's edits from Obsidian aren't overwritten.
+- Use `claude: <what changed>` as the message, e.g. `claude: daily note 2026-10-14`.
