@@ -1,4 +1,5 @@
-# Suzanne Favri
+# Suzanne Favri (SF)
 
-- **Role:** Marketing team; digital ads and content (PRS, seminary, nursing).
-- **Works with Brent on:** ad retargeting alignment with email, PRS and Seminary Preview Day Meta ads.
+- **Role:** Assistant Director of Digital Marketing; digital ads and content (PRS, seminary, nursing).
+- **Works with Brent on:** ad retargeting aligned with email (nursing list, visited-not-applied), PRS and Seminary Preview Day Meta ads, grad program social ads.
+- Spelled "Farvi" in Brent's Obsidian vault; monday.com has Favri.
