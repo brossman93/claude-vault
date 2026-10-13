@@ -19,6 +19,7 @@ Claude's working memory for Brent's AU marketing and communications work. Start 
 - [[Advancement Comms]]: Schar, Homecoming, Madrigals, Accent
 - [[Brand Guidelines]]: messaging section of the AU brand guidelines
 - [[Creative Standards]]: Peede's quality bar
+- [[Research Notes]]: takeaways from higher ed reading and podcasts
 
 ## People
 - **Marketing:** [[Kaitlynn Payne]] (Brent's manager), [[Kyle Hauenstein]], [[Madalyn Huvler]], [[Suzanne Favri]], [[Chad Draper]], [[Katrina Beer]], [[Allison Waltz-Boebel]], [[Hugh Howard]], [[Nicholas Fedorchak]], [[Josie Sipe]]. Also Bethany Frazer and Mike Ruhe.
@@ -39,6 +40,9 @@ Claude's working memory for Brent's AU marketing and communications work. Start 
 - **Saintmaker:** each morning, pick the top 3–5 tasks and circle the most important.
 - **Apple Reminders:** quick capture.
 - ClickUp is dropped for AU tasks.
+
+## Personal
+- [[Phi Psi]], [[Faith and Ideas]], [[Reading and Listening]], [[Productivity System]]
 
 ## Daily notes
 Morning reports land in `Daily/`, one per weekday. Friday reviews land in `Weekly/`.
