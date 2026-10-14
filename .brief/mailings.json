@@ -1,0 +1,20 @@
+[
+  {
+    "title": "Preview Day Nov. 14 · Invite 1 (Slate)",
+    "sub": "\"Have you found your home for college yet?\" · sending Oct. 13–18",
+    "asOf": "Slate stats as of Oct. 14, 1:54 PM",
+    "endsOn": "2026-10-18",
+    "stats": [
+      ["Sent", "2,830", "94.7% delivered"],
+      ["Unique opens", "20.3%", "past 14.2–35.9%"],
+      ["Unique clicks", "0.4%", "past 0.4–1.3%"],
+      ["Bounces", "5.3%", "past 2.8–3.4%", true],
+      ["Opt-outs", "0.1%", "past 0.3–1.1%"]
+    ],
+    "note": "Early numbers against final ones; compare again after the mailing ends Oct. 18. Bounces are the highest of any Preview Day email, and this is the first send that copies parents. 12 of 24 clicks went to the registration page.",
+    "report": "https://claude.ai/artifact/K5kQ3amzkUXP6kiqGaceFJ",
+    "reportText": "Compare with past Preview Day emails",
+    "url": "https://apply.ashland.edu/manage/deliver/mailing?id=bede742c-d6f5-4512-929c-dc598df04986",
+    "urlText": "Open the mailing in Slate"
+  }
+]

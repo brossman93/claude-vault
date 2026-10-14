@@ -208,6 +208,16 @@ def ac(d):
                       + (f'<a href="{e(r["url"])}"{NT}>{e(r.get("linkText", "Full report in AC"))} &#8599;</a>' if r.get('url') else '')
                       + (f'<p>{e(r["note"])}</p>' if r.get('note') else '') + '</div>')
         rfis = f'<div class="rfis">{cells}</div>'
+    mails = ''
+    for m in a.get('mailings') or []:
+        kv = ''.join(f'<div class="kv{" warn" if len(st) > 3 and st[3] else ""}"><span>{e(st[0])}</span><b>{e(st[1])}</b>'
+                     + (f'<small>{e(st[2])}</small>' if len(st) > 2 and st[2] else '') + '</div>' for st in m['stats'])
+        links = ''.join(f'<a href="{e(u)}"{NT}>{e(t)} &#8599;</a>' for u, t in ((m.get('report'), m.get('reportText', 'Compare with past emails')), (m.get('url'), m.get('urlText', 'Open in Slate'))) if u)
+        mails += (f'<div class="mail"><div class="tile-h"><b>{e(m["title"])}</b><span class="asof">{e(m.get("asOf", ""))}</span></div>'
+                  + (f'<p class="msub">{e(m["sub"])}</p>' if m.get('sub') else '')
+                  + f'<div class="mkvs">{kv}</div>' + (f'<p>{e(m["note"])}</p>' if m.get('note') else '') + f'<div class="mlinks">{links}</div></div>')
+    if mails:
+        mails = f'<div class="mails">{mails}</div>'
     ug = a['automations'][0]
     lead = f'<p class="flag">{"<span class=pill-warn>&#9650; Stall</span> " if a.get("stall") else ""}<b>{e(a["lead"])}</b></p>' if a.get('lead') else ''
     sends = ''
@@ -219,7 +229,7 @@ def ac(d):
     sched = f'<p class="note">{e(a["scheduled"])}</p>' if a.get('scheduled') else ''
     if not ug.get('emails'):
         flag = f'<p class="flag"><span class="pill-warn">&#9650; Check</span> {e(a["flag"])}</p>' if a.get('flag') else ''
-        return f'{lead}{rfis}{flag}<div class="tiles">{tiles}</div>{sends}{sched}'
+        return f'{lead}{rfis}{mails}{flag}<div class="tiles">{tiles}</div>{sends}{sched}'
     rows = ''
     OMAX, CMAX = 50, 10
     for name, sends, op, cl in ug['emails']:
@@ -230,7 +240,7 @@ def ac(d):
     chart = (f'<figure class="ug"><figcaption>UG Inquiry nurture, by touchpoint <small>lifetime, as of {e(a["asOf"])}; faded rows have under 50 sends</small></figcaption>'
              f'<div class="bar-row head"><span></span><span>Open rate <small>0–50%</small></span><span>Click rate <small>0–10%</small></span></div>{rows}</figure>')
     flag = f'<p class="flag"><span class="pill-warn">&#9650; Check</span> {e(a["flag"])}</p>' if a.get('flag') else ''
-    return f'{lead}{rfis}{flag}<div class="tiles">{tiles}</div>{chart}{sends}{sched}'
+    return f'{lead}{rfis}{mails}{flag}<div class="tiles">{tiles}</div>{chart}{sends}{sched}'
 
 
 def news(d):
@@ -403,6 +413,15 @@ a.nudge{text-decoration:none;cursor:pointer}a.nudge:hover{background:var(--warn)
 .tag{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--mute);border:1px solid var(--hair);border-radius:5px;padding:1px 6px;text-align:center}
 /* activecampaign */
 .flag{font-size:14px;color:var(--soft);margin-bottom:14px}
+.mails{display:grid;gap:12px;margin:0 0 14px}
+.mail{background:var(--card);border:1px solid var(--hair);border-radius:10px;padding:12px 14px;min-width:0}
+.mail .asof{font-size:11.5px;color:var(--mute)}
+.mail .msub{font-size:13px;color:var(--soft);margin:0 0 8px}
+.mkvs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px 10px;margin-bottom:8px}
+.mkvs .kv small{display:block;font-size:11px;color:var(--mute)}
+.mkvs .kv.warn b{color:var(--clay,#b4471f)}
+.mail p{font-size:13px;color:var(--soft);margin:0 0 6px}
+.mlinks{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px}
 .rfis{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin:0 0 14px}
 .rfi{background:var(--card);border:1px solid var(--hair);border-radius:10px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline;min-width:0}
 .rfi span{font-size:13px;font-weight:600}
@@ -462,6 +481,7 @@ a.nudge{text-decoration:none;cursor:pointer}a.nudge:hover{background:var(--warn)
   .d-a{grid-column:1/-1}
   .yday li{grid-template-columns:1fr}.tag{justify-self:start}
   .kvs{grid-template-columns:repeat(2,1fr)}
+  .mkvs{grid-template-columns:repeat(2,1fr)}
   .task .nb{grid-column:1/-1}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

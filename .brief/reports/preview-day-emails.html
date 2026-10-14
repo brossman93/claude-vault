@@ -1,0 +1,140 @@
+<title>Preview Day Email Results</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; summary tiles, then two to-scale bar charts, then the full table and notes. */
+:root{
+  --bg:#faf9fc; --surface:#ffffff; --ink:#1d1724; --soft:#4d4458; --mute:#7a7086; --hair:#e4dfea;
+  --accent:#5c068c; --accent-soft:#efe5f6; --now:#c98f00; --now-soft:#fff3cf; --bar:#cbbfd8; --warn:#b4471f;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-data:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141019; --surface:#1d1724; --ink:#f1ecf6; --soft:#c9bfd4; --mute:#968aa4; --hair:#342b3f;
+  --accent:#c99bf0; --accent-soft:#2c1f3a; --now:#ffc72c; --now-soft:#3a2f10; --bar:#4b3d5c; --warn:#f08a62; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141019; --surface:#1d1724; --ink:#f1ecf6; --soft:#c9bfd4; --mute:#968aa4; --hair:#342b3f;
+  --accent:#c99bf0; --accent-soft:#2c1f3a; --now:#ffc72c; --now-soft:#3a2f10; --bar:#4b3d5c; --warn:#f08a62; color-scheme:dark}
+*{box-sizing:border-box}
+.wrap>*{min-width:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--f-body);margin:0}
+.wrap{max-width:860px;margin:0 auto;padding-block:32px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:36px}
+header{display:grid;gap:8px}
+.eyebrow{font:500 12px/1 var(--f-data);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font:700 clamp(28px,5vw,40px)/1.1 var(--f-display);margin:0;text-wrap:balance}
+h2{font:600 20px/1.2 var(--f-display);margin:0 0 4px;text-wrap:balance}
+.lede{color:var(--soft);max-width:65ch;margin:0}
+.meta{font:13px/1.5 var(--f-data);color:var(--mute)}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--hair);border-radius:8px;padding:14px 16px;display:grid;gap:4px;min-width:0}
+.tile span{font-size:12.5px;color:var(--mute)}
+.tile b{font:500 26px/1.1 var(--f-data);font-variant-numeric:tabular-nums}
+.tile small{font-size:12.5px;color:var(--soft)}
+.tile.bad b{color:var(--warn)}
+.chart{display:grid;gap:8px}
+.chart .sub{color:var(--mute);font-size:13px;margin:0}
+.row{display:grid;grid-template-columns:minmax(120px,190px) 1fr 62px;gap:10px;align-items:center;font-size:13.5px}
+.row .lbl{color:var(--soft);min-width:0}
+.row .lbl small{display:block;color:var(--mute);font-size:11.5px}
+.track{height:14px;background:var(--hair);border-radius:3px;position:relative;overflow:hidden}
+.fill{position:absolute;inset:0 auto 0 0;background:var(--bar);border-radius:3px}
+.row.now .fill{background:var(--now)}
+.row.now .lbl{color:var(--ink);font-weight:600}
+.val{font:13px var(--f-data);font-variant-numeric:tabular-nums;text-align:right}
+.axis{display:grid;grid-template-columns:minmax(120px,190px) 1fr 62px;gap:10px;font:11px var(--f-data);color:var(--mute)}
+.axis div{display:flex;justify-content:space-between}
+.tbl{overflow-x:auto;border:1px solid var(--hair);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:13.5px}
+th,td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--hair);white-space:nowrap}
+th{font:500 11.5px var(--f-data);letter-spacing:.04em;text-transform:uppercase;color:var(--mute);background:var(--bg)}
+td{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left;font-family:var(--f-body)}
+td:first-child small{display:block;color:var(--mute);font-size:12px;white-space:normal}
+tr.now td{background:var(--now-soft)}
+tr:last-child td{border-bottom:0}
+.pill{display:inline-block;font:500 11px var(--f-data);padding:2px 7px;border-radius:99px;background:var(--now);color:#1d1724;margin-left:6px;vertical-align:1px}
+.notes{display:grid;gap:10px;margin:0;padding:0;list-style:none;max-width:68ch}
+.notes li{padding-left:16px;position:relative;color:var(--soft)}
+.notes li::before{content:"";position:absolute;left:0;top:.65em;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.notes b{color:var(--ink)}
+footer{font-size:13px;color:var(--mute);border-top:1px solid var(--hair);padding-top:16px;display:grid;gap:4px}
+@media (max-width:520px){.row,.axis{grid-template-columns:110px 1fr 54px}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">UG Preview Day · Nov. 14, 2026</div>
+    <h1>Invite 1 against past Preview Day emails</h1>
+    <p class="lede">"Have you found your home for college yet?" went out from Slate on Oct. 13. The mailing runs through Oct. 18, so these are early numbers set against final numbers from the April and September Preview Day emails.</p>
+    <div class="meta">Slate stats as of Oct. 14, 1:54 PM ET · <a href="https://apply.ashland.edu/manage/deliver/mailing?id=bede742c-d6f5-4512-929c-dc598df04986" target="_blank" rel="noopener">Open the mailing in Slate</a> · <a href="https://ashland-university-marketing.monday.com/docs/18406543284" target="_blank" rel="noopener">Past results (monday doc)</a></div>
+  </header>
+
+  <section class="tiles" aria-label="Invite 1 so far">
+    <div class="tile"><span>Sent</span><b>2,830</b><small>2,681 delivered (94.7%)</small></div>
+    <div class="tile"><span>Unique opens</span><b>20.3%</b><small>575 · past emails 14.2–35.9%</small></div>
+    <div class="tile"><span>Unique clicks</span><b>0.4%</b><small>11 · 12 clicks on the register link</small></div>
+    <div class="tile bad"><span>Bounces</span><b>5.3%</b><small>149 · highest of any Preview Day email</small></div>
+    <div class="tile"><span>Opt-outs</span><b>0.1%</b><small>3 · lowest so far</small></div>
+  </section>
+
+  <section class="chart" aria-label="Unique open rate by email">
+    <h2>Unique open rate</h2>
+    <p class="sub">Share of sent, as Slate reports it. Scale 0–40%.</p>
+    <div class="row"><div class="lbl">Apr · Invite 1<small>Mar 16–31</small></div><div class="track"><div class="fill" style="width:87%"></div></div><div class="val">34.8%</div></div>
+    <div class="row"><div class="lbl">Apr · Invite 2<small>Apr 1–10</small></div><div class="track"><div class="fill" style="width:76.75%"></div></div><div class="val">30.7%</div></div>
+    <div class="row"><div class="lbl">Sep · Invite 2<small>Aug 31</small></div><div class="track"><div class="fill" style="width:89.75%"></div></div><div class="val">35.9%</div></div>
+    <div class="row"><div class="lbl">Sep · Invite 4<small>Sep 10</small></div><div class="track"><div class="fill" style="width:88.75%"></div></div><div class="val">35.5%</div></div>
+    <div class="row"><div class="lbl">Sep · Invite 1<small>Sep 11–17</small></div><div class="track"><div class="fill" style="width:35.5%"></div></div><div class="val">14.2%</div></div>
+    <div class="row now"><div class="lbl">Nov · Invite 1<small>Oct 13–18, in progress</small></div><div class="track"><div class="fill" style="width:50.75%"></div></div><div class="val">20.3%</div></div>
+    <div class="axis"><span></span><div><span>0%</span><span>10%</span><span>20%</span><span>30%</span><span>40%</span></div><span></span></div>
+  </section>
+
+  <section class="chart" aria-label="Unique click rate by email">
+    <h2>Unique click rate</h2>
+    <p class="sub">Share of sent. Scale 0–1.5%.</p>
+    <div class="row"><div class="lbl">Apr · Invite 1</div><div class="track"><div class="fill" style="width:52%"></div></div><div class="val">0.78%</div></div>
+    <div class="row"><div class="lbl">Apr · Invite 2</div><div class="track"><div class="fill" style="width:53.3%"></div></div><div class="val">0.80%</div></div>
+    <div class="row"><div class="lbl">Sep · Invite 2</div><div class="track"><div class="fill" style="width:83.3%"></div></div><div class="val">1.25%</div></div>
+    <div class="row"><div class="lbl">Sep · Invite 4</div><div class="track"><div class="fill" style="width:50%"></div></div><div class="val">0.75%</div></div>
+    <div class="row"><div class="lbl">Sep · Invite 1</div><div class="track"><div class="fill" style="width:27.3%"></div></div><div class="val">0.41%</div></div>
+    <div class="row now"><div class="lbl">Nov · Invite 1</div><div class="track"><div class="fill" style="width:26%"></div></div><div class="val">0.39%</div></div>
+    <div class="axis"><span></span><div><span>0%</span><span>0.5%</span><span>1.0%</span><span>1.5%</span></div><span></span></div>
+  </section>
+
+  <section>
+    <h2>All Preview Day emails</h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Email</th><th>Sent</th><th>Delivered</th><th>Uniq. opens</th><th>Uniq. clicks</th><th>Bounces</th><th>Opt-outs</th></tr></thead>
+        <tbody>
+          <tr><td>Apr · Invite 1<small>"A Preview of Life at AU" · Mar 16–31</small></td><td>3,831</td><td>96.6%</td><td>34.8%</td><td>0.78%</td><td>3.4%</td><td>1.10%</td></tr>
+          <tr><td>Apr · Invite 2<small>"Don't Miss a Preview of Life at AU" · Apr 1–10</small></td><td>3,773</td><td>96.8%</td><td>30.7%</td><td>0.80%</td><td>3.2%</td><td>0.90%</td></tr>
+          <tr><td>Sep · Invite 2<small>"Can you see yourself at Ashland?" · Aug 31</small></td><td>3,111</td><td>97.2%</td><td>35.9%</td><td>1.25%</td><td>2.8%</td><td>0.35%</td></tr>
+          <tr><td>Sep · Invite 4<small>"A look at Preview Day on September 19" · Sep 10</small></td><td>3,182</td><td>97.1%</td><td>35.5%</td><td>0.75%</td><td>2.9%</td><td>0.31%</td></tr>
+          <tr><td>Sep · Invite 1<small>"Experience AU for Yourself" · Sep 11–17</small></td><td>5,117</td><td>97.2%</td><td>14.2%</td><td>0.41%</td><td>2.8%</td><td>0.47%</td></tr>
+          <tr class="now"><td>Nov · Invite 1 <span class="pill">In progress</span><small>"Have you found your home for college yet?" · Oct 13–18</small></td><td>2,830</td><td>94.7%</td><td>20.3%</td><td>0.39%</td><td>5.3%</td><td>0.11%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>What stands out</h2>
+    <ul class="notes">
+      <li><b>Opens are early.</b> 575 unique opens after about a day, with 44 more on day two. Past emails finished between 30.7% and 35.9%, except September's Invite 1 at 14.2%. Compare again after the mailing ends Oct. 18.</li>
+      <li><b>Bounces are high.</b> 149 bounces (5.3%) against 2.8–3.4% for every earlier Preview Day email. This is the first send that copies parents, so the Slate delivery report is worth a look to see whether the bounces are student or parent addresses.</li>
+      <li><b>Few clicks reach registration.</b> Of 24 clicks, 12 went to the registration page and 12 went to the AU site and social links in the footer.</li>
+      <li><b>Opt-outs are the lowest yet.</b> 3 so far (0.1%), down from 0.3–1.1% on past emails.</li>
+      <li><b>The list is narrower.</b> It leaves out anyone who attended Sept. 19 or already registered for Nov. 14, so this audience has already passed on at least one Preview Day invite.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span>Rates are a share of total sent, matching how Slate and the monday doc report them. The text invites are left out because they have no open or click data.</span>
+    <span>Open rates are inflated by mail privacy protections; clicks and registrations are the more reliable signal.</span>
+  </footer>
+</div>
