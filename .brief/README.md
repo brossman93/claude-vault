@@ -16,7 +16,8 @@ Publish `out.html` to https://claude.ai/artifact/Bvu81Ucp9Tuz2TDZR4CEaL with the
 - `tasks`: today's ranked candidates [{id (monday item id), title, url, why, priority, status, due (YYYY-MM-DD or ""), board, boardId, statusCol, rank}]; `goalsNote`
 - `waiting` [{title, who, days (business days), since, url, note}], longest first
 - `yesterday` [{tag, text}]
-- `ac`: {asOf, flag?, automations [{name, status, now, entered, sends, open, click, emails [[name, sends, openRate, clickRate]], note}]}; the first automation is charted by touchpoint
+- `replies` (optional): AU email replies owed, same item shape as `needs`
+- `ac`: {asOf, lead? (UG nurture line), stall?, sends? [[name, sends, opens, clicks, bounces, unsubs]], sendsCaption?, sendsNote?, scheduled?, flag?, automations [{name, status, now, entered, sends, open, click, emails [[name, sends, openRate, clickRate]], note}]}; the first automation is charted by touchpoint when its `emails` list is non-empty; `open`/`click` may be null to hide rates. The Family lane shows only when a family event is passed
 - `news` [{title, source, date, url, summary, why}]
 - `deletions` [{sender, what, threads [Gmail thread ids]}]
 

@@ -23,7 +23,7 @@ Claude's working memory for Brent's AU marketing and communications work. Start 
 - [[Research Notes]]: takeaways from higher ed reading and podcasts
 
 ## People
-- **Marketing:** [[Kaitlynn Payne]] (Brent's manager), [[Kyle Hauenstein]], [[Madalyn Huvler]], [[Suzanne Favri]], [[Chad Draper]], [[Katrina Beer]], [[Allison Waltz-Boebel]], [[Hugh Howard]], [[Nicholas Fedorchak]], [[Josie Sipe]]. Also Bethany Frazer and Mike Ruhe.
+- **Marketing:** [[Kaitlynn Payne]] (Brent's manager), [[Kyle Hauenstein]], [[Madalyn Huvler]], [[Suzanne Favri]], [[Chad Draper]], [[Katrina Beer]], [[Allison Waltz-Boebel]], [[Hugh Howard]], [[Nicholas Fedorchak]], [[Josie Sipe]]. Also [[Bethany Frazer]] and Mike Ruhe.
 - **Admissions:** [[Tracy Lantz]], [[Randy Spade]], [[Sydney Good]], [[John McCabe]], [[Cara Selan]] (seminary), [[Sue Homan]] (left ~10/12)
 - **Advancement:** [[Mark Libs]], [[Jeff Alix]], [[Lori Byron]]
 - **Other:** [[Jon Parrish Peede]] (president), [[Ron Blackley]] (Music and Theater)

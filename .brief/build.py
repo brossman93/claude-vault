@@ -90,7 +90,10 @@ def calendar(d):
     out = ['<div class="cal">']
     for day in d['days']:
         lanes = ''
+        has_fam = any(x['lane'] == 'family' for dd in d['days'] for x in dd['events'])
         for lane, label in (('au', 'AU'), ('family', 'Family')):
+            if lane == 'family' and not has_fam:
+                continue
             blocks = ''
             for ev in [x for x in day['events'] if x['lane'] == lane]:
                 left = (max(ev['start'], H0) - H0) / span * 100
@@ -110,7 +113,9 @@ def calendar(d):
         out.append(f'''<div class="cal-day"><div class="cal-h"><b>{e(day["label"])}</b><span>{e(day["date"])}</span></div>
 <div class="axis">{ticks}</div>{lanes}
 <ul class="cal-list">{rows}</ul>{f'<ul class="allday">{allday}</ul>' if allday else ''}{kate_line}</div>''')
-    out.append('<p class="legend"><span class="sw sw-au"></span>AU calendar <span class="sw sw-family"></span>Family Calendar</p></div>')
+    if any(x['lane'] == 'family' for dd in d['days'] for x in dd['events']):
+        out.append('<p class="legend"><span class="sw sw-au"></span>AU calendar <span class="sw sw-family"></span>Family Calendar</p>')
+    out.append('</div>')
     return ''.join(out)
 
 
@@ -151,11 +156,22 @@ def ac(d):
         active = au['status'] == 'Active'
         pill = '<span class="pill-ok">&#9679; Active</span>' if active else '<span class="pill-off">&#9675; Inactive</span>'
         rates = (f'<div class="kv"><span>Open</span><b>{au["open"]:.0f}%</b></div><div class="kv"><span>Click</span><b>{au["click"]:.0f}%</b></div>'
-                 if au.get('sends') else '')
+                 if au.get('sends') and au.get('open') is not None else '')
         tiles += (f'<div class="tile{" off" if not active else ""}"><div class="tile-h"><b>{e(au["name"])}</b>{pill}</div>'
                   f'<div class="kvs"><div class="kv"><span>In it now</span><b>{au["now"]:,}</b></div><div class="kv"><span>Entered</span><b>{au["entered"]:,}</b></div>'
                   f'<div class="kv"><span>Sends</span><b>{au["sends"]:,}</b></div>{rates}</div><p>{e(au["note"])}</p></div>')
     ug = a['automations'][0]
+    lead = f'<p class="flag">{"<span class=pill-warn>&#9650; Stall</span> " if a.get("stall") else ""}<b>{e(a["lead"])}</b></p>' if a.get('lead') else ''
+    sends = ''
+    if a.get('sends'):
+        sends = ('<figure class="ug"><figcaption>' + e(a.get('sendsCaption', 'Recent sends')) + '</figcaption>'
+                 '<table class="sends"><thead><tr><th>Email</th><th>Sends</th><th>Opens</th><th>Clicks</th><th>Bounces</th><th>Unsubs</th></tr></thead><tbody>'
+                 + ''.join(f'<tr><td>{e(r[0])}</td>' + ''.join(f'<td>{e(str(v))}</td>' for v in r[1:]) + '</tr>' for r in a['sends'])
+                 + '</tbody></table>' + (f'<p class="note">{e(a["sendsNote"])}</p>' if a.get('sendsNote') else '') + '</figure>')
+    sched = f'<p class="note">{e(a["scheduled"])}</p>' if a.get('scheduled') else ''
+    if not ug.get('emails'):
+        flag = f'<p class="flag"><span class="pill-warn">&#9650; Check</span> {e(a["flag"])}</p>' if a.get('flag') else ''
+        return f'{lead}{flag}<div class="tiles">{tiles}</div>{sends}{sched}'
     rows = ''
     OMAX, CMAX = 50, 10
     for name, sends, op, cl in ug['emails']:
@@ -166,7 +182,7 @@ def ac(d):
     chart = (f'<figure class="ug"><figcaption>UG Inquiry nurture, by touchpoint <small>lifetime, as of {e(a["asOf"])}; faded rows have under 50 sends</small></figcaption>'
              f'<div class="bar-row head"><span></span><span>Open rate <small>0–50%</small></span><span>Click rate <small>0–10%</small></span></div>{rows}</figure>')
     flag = f'<p class="flag"><span class="pill-warn">&#9650; Check</span> {e(a["flag"])}</p>' if a.get('flag') else ''
-    return f'{flag}<div class="tiles">{tiles}</div>{chart}'
+    return f'{lead}{flag}<div class="tiles">{tiles}</div>{chart}{sends}{sched}'
 
 
 def news(d):
@@ -347,6 +363,10 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 .bo{background:var(--open)}.bc{background:var(--click)}
 .bt em{font-style:normal;font-size:12px;color:var(--soft);font-variant-numeric:tabular-nums}
 .bar-row:hover:not(.head){background:var(--chip)}
+.sends{width:100%;border-collapse:collapse;font-size:13px;min-width:520px}
+.sends th{text-align:left;font-weight:500;color:var(--mute);font-size:12px;border-bottom:1px solid var(--hair);padding:4px 6px}
+.sends td{padding:5px 6px;border-bottom:1px solid var(--hair);color:var(--soft);font-variant-numeric:tabular-nums}
+.sends td:first-child{color:var(--ink)}
 /* news */
 .news{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .news article{border-top:2px solid var(--ink);padding-top:10px;min-width:0}
@@ -515,7 +535,7 @@ def build(d):
     secs = []
     if d.get('weekly'):
         secs.append(f'<section><h2>{e(d["weekly"]["title"])}</h2>{d["weekly"]["html"]}</section>')
-    secs.append(f'<section><h2>Today and tomorrow</h2>{calendar(d)}</section>')
+    secs.append(f'<section><h2>{"Today and tomorrow" if len(d["days"]) > 1 else "Today"}</h2>{calendar(d)}</section>')
     if d.get('meetings'):
         secs.append(f'<section><h2>Meetings today</h2>{items(d["meetings"])}</section>')
     secs.append(f'<section><h2>Needs attention</h2>{items(d["needs"])}</section>')
@@ -526,6 +546,8 @@ def build(d):
 <div class="prio-foot"><span id="prio-status" aria-live="polite"></span><span>Done also sets the item to Done in monday.</span></div></div>
 <ul id="prio-done" aria-label="Done today"></ul><p class="note">{e(d.get("goalsNote", ""))}</p></section>''')
     secs.append(f'<section><div class="two"><div><h2>Missed in monday</h2>{items(d["missed"])}</div><div><h2>Resolved</h2>{items(d["resolved"])}</div></div></section>')
+    if d.get('replies'):
+        secs.append(f'<section><h2>AU email, replies owed</h2>{items(d["replies"])}</section>')
     secs.append(f'<section><h2>Waiting on others</h2>{waiting(d)}</section>')
     secs.append(f'<section><h2>Yesterday’s work</h2>{yesterday(d)}</section>')
     secs.append(f'<section><h2>ActiveCampaign <small>ENR nurture automations</small></h2>{ac(d)}</section>')

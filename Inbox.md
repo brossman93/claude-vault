@@ -18,6 +18,7 @@ Open threads from Brent's AU Outlook inbox. First full pass 2026-10-13 (20 conve
 - **Seminary scheduler link**: [[Kaitlynn Payne|KP]] asked 9/23 whether the Slate Scheduler link is coming or Cara can use a temporary Microsoft scheduling link. Last blocker for launching the seminary flow; no answer in the thread.
 - **Viewbook list with emails**: KP asked [[Tracy Lantz|Tracy]] 9/17 whether to rerun the viewbook query to export emails for AC tagging. Tracy had offered to add a "sent" interaction and pull a matching list. No answer since.
 - **Nursing blog posts**: forwarded to [[Hugh Howard]] 10/12 to decide whether they go up as blogs. See [[Nursing Graduate Programs]].
+- **ClickUp and TextExpander access** (IT ticket TSC-46928): IT replied 10/13 that both apps need new mailbox-protection rules and testing before they're enabled for Brent. No date given.
 - **CommonApp landing page**: [[Suzanne Favri]] is collecting edits (60+ programs, 24 NCAA DII teams, virtual tour link later). Admissions isn't likely to prioritize it soon (10/8). Brent is still waiting on Tracy for CommonApp prospect data.
 
 ## FYI

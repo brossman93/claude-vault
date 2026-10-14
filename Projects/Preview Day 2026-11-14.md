@@ -18,5 +18,8 @@ Nov. 14 is both the UG Preview Day and [[ATS Email Marketing|Seminary]] Preview 
 - AC automation: "ENR: sem ev - 2026.11.14 SEM Preview Day".
 - **Conflict:** registration runs through AC, but [[Tracy Lantz|Tracy]] says events and registrations must be built in Slate (ticket), and wants to talk before another event is scheduled (10/13). Resolve before registrations pile up. Brent is raising it with [[Kyle Hauenstein|Kyle]] at the 10/14 team meeting.
 
+- Registration form updated with the new pathways (Brent, 10/13); Website Event Page marked done.
+- Related: a new seminary event request (Wounded Healer, Campus Requests) uses the same event page plus registration form setup; Bethany Frazer asked Madalyn 10/14 to send Brent the AC form fields, which runs into the same Slate-vs-AC question.
+
 ## Decisions
 - Seminary promotion prioritized over nursing (10/8).
