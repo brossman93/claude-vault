@@ -19,6 +19,7 @@ Publish `out.html` to https://claude.ai/artifact/Bvu81Ucp9Tuz2TDZR4CEaL with the
 - `yesterday` [{tag, text}]
 - `replies` (optional): AU email replies owed, same item shape as `needs`
 - `ac`: {asOf, lead? (UG nurture line), stall?, sends? [[name, sends, opens, clicks, bounces, unsubs]], sendsCaption?, sendsNote?, scheduled?, flag?, automations [{name, status, now, entered, sends, open, click, emails [[name, sends, openRate, clickRate]], note}]}; the first automation is charted by touchpoint when its `emails` list is non-empty; `open`/`click` may be null to hide rates. The Family lane shows only when a family event is passed
+- `ac.rfis` (optional): RFI form counts shown above the automation cards, [{name, count (null if the call failed), label ("Yesterday" or "Fri–Sun"), url, linkText, note?}]. Ashland.edu link: saved AC segment 1507 "Brief: Ashland.edu RFIs yesterday" (Origin Source = Form Fills, RFI date = yesterday, no InPursuit tag).
 - `news` [{title, source, date, url, summary, why}]
 - `deletions` [{sender, what, threads [Gmail thread ids]}]
 

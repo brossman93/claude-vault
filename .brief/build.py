@@ -198,6 +198,16 @@ def ac(d):
                   f'<div class="kvs"><div class="kv yd"><span>{e(au.get("ydayLabel", "Yesterday"))}</span><b>{yd}</b></div>'
                   f'<div class="kv"><span>In it now</span><b>{au["now"]:,}</b></div><div class="kv"><span>Entered</span><b>{au["entered"]:,}</b></div>'
                   f'<div class="kv"><span>Sends</span><b>{au["sends"]:,}</b></div>{rates}</div><p>{e(au["note"])}</p></div>')
+    rfis = ''
+    if a.get('rfis'):
+        cells = ''
+        for r in a['rfis']:
+            n = '—' if r.get('count') is None else f'{r["count"]:,}'
+            cells += (f'<div class="rfi"><span>{e(r["name"])}</span><b>{n}</b>'
+                      f'<small>{e(r.get("label", "Yesterday"))}</small>'
+                      + (f'<a href="{e(r["url"])}"{NT}>{e(r.get("linkText", "Full report in AC"))} &#8599;</a>' if r.get('url') else '')
+                      + (f'<p>{e(r["note"])}</p>' if r.get('note') else '') + '</div>')
+        rfis = f'<div class="rfis">{cells}</div>'
     ug = a['automations'][0]
     lead = f'<p class="flag">{"<span class=pill-warn>&#9650; Stall</span> " if a.get("stall") else ""}<b>{e(a["lead"])}</b></p>' if a.get('lead') else ''
     sends = ''
@@ -209,7 +219,7 @@ def ac(d):
     sched = f'<p class="note">{e(a["scheduled"])}</p>' if a.get('scheduled') else ''
     if not ug.get('emails'):
         flag = f'<p class="flag"><span class="pill-warn">&#9650; Check</span> {e(a["flag"])}</p>' if a.get('flag') else ''
-        return f'{lead}{flag}<div class="tiles">{tiles}</div>{sends}{sched}'
+        return f'{lead}{rfis}{flag}<div class="tiles">{tiles}</div>{sends}{sched}'
     rows = ''
     OMAX, CMAX = 50, 10
     for name, sends, op, cl in ug['emails']:
@@ -220,7 +230,7 @@ def ac(d):
     chart = (f'<figure class="ug"><figcaption>UG Inquiry nurture, by touchpoint <small>lifetime, as of {e(a["asOf"])}; faded rows have under 50 sends</small></figcaption>'
              f'<div class="bar-row head"><span></span><span>Open rate <small>0–50%</small></span><span>Click rate <small>0–10%</small></span></div>{rows}</figure>')
     flag = f'<p class="flag"><span class="pill-warn">&#9650; Check</span> {e(a["flag"])}</p>' if a.get('flag') else ''
-    return f'{lead}{flag}<div class="tiles">{tiles}</div>{chart}{sends}{sched}'
+    return f'{lead}{rfis}{flag}<div class="tiles">{tiles}</div>{chart}{sends}{sched}'
 
 
 def news(d):
@@ -393,6 +403,13 @@ a.nudge{text-decoration:none;cursor:pointer}a.nudge:hover{background:var(--warn)
 .tag{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--mute);border:1px solid var(--hair);border-radius:5px;padding:1px 6px;text-align:center}
 /* activecampaign */
 .flag{font-size:14px;color:var(--soft);margin-bottom:14px}
+.rfis{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin:0 0 14px}
+.rfi{background:var(--card);border:1px solid var(--hair);border-radius:10px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline;min-width:0}
+.rfi span{font-size:13px;font-weight:600}
+.rfi b{font-size:26px;font-variant-numeric:tabular-nums;grid-row:span 2;align-self:center}
+.rfi small{font-size:11.5px;color:var(--mute)}
+.rfi a{grid-column:1/-1;font-size:12.5px;margin-top:6px}
+.rfi p{grid-column:1/-1;font-size:12.5px;color:var(--soft);margin:4px 0 0}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
 .tile{background:var(--card);border:1px solid var(--hair);border-radius:10px;padding:12px 14px;min-width:0}
 .tile.off{background:transparent;border-style:dashed}
