@@ -12,9 +12,10 @@ Publish `out.html` to https://claude.ai/artifact/Bvu81Ucp9Tuz2TDZR4CEaL with the
 - `date` (YYYY-MM-DD), `dayDate`, `headline`, `motif` ("sun" or omit), `flag` (bool, clay deadline flag), `acts` [3 × {time, text}]
 - `days` [today, tomorrow] (Mondays: one per weekday): {label, date, events [{lane: "au"|"family", start, end (decimal hours), title, sub, url}], allday [{title, url}], kateCount}
 - `weekly` (Mon/Fri only): {title, html}
-- `meetings` (only if AU meetings today), `needs`, `resolved`, `missed`, `pmail`, `hand`: lists of {title, url, body, who?, where?, when?, button? {label, seed}}
+- `meetings` (only if AU meetings today), `needs`, `resolved`, `missed`, `replies`, `pmail`, `hand`: lists of {id, title, url, body, who?, where?, when?, button? {label, seed}}. `id` keeps each item's update box stable across days: the monday item id, or a short slug of the topic.
+- `meetings[].agenda` (optional): path of an agenda note that already exists in Brent's Obsidian vault, relative to the vault root, e.g. `2026.10.14 Team Touchbase.md` or `AU Meetings/2026.10.14 ADV x Marketing.md`. The page links it as `obsidian://open?vault=Obsidian&file=…`. Never create an agenda.
 - `tasks`: today's ranked candidates [{id (monday item id), title, url, why, priority, status, due (YYYY-MM-DD or ""), board, boardId, statusCol, rank}]; `goalsNote`
-- `waiting` [{title, who, days (business days), since, url, note}], longest first
+- `waiting` [{id, title, who, days (business days), since, url, note}], longest first. Items over 3 business days get a Nudge link that opens Claude to draft a follow-up.
 - `yesterday` [{tag, text}]
 - `replies` (optional): AU email replies owed, same item shape as `needs`
 - `ac`: {asOf, lead? (UG nurture line), stall?, sends? [[name, sends, opens, clicks, bounces, unsubs]], sendsCaption?, sendsNote?, scheduled?, flag?, automations [{name, status, now, entered, sends, open, click, emails [[name, sends, openRate, clickRate]], note}]}; the first automation is charted by touchpoint when its `emails` list is non-empty; `open`/`click` may be null to hide rates. The Family lane shows only when a family event is passed
@@ -23,3 +24,9 @@ Publish `out.html` to https://claude.ai/artifact/Bvu81Ucp9Tuz2TDZR4CEaL with the
 
 ## Task store (artifact db, collection `tasks`)
 One document per task, id = monday item id or `c-…` for Brent's own. Fields: title, url, why, priority, status, due, board, boardId, statusCol, rank, source ("monday"|"custom"), active, done, doneDay, prevStatus, mondaySynced, userRanked, surfaced. The page writes rank, done, doneDay, and custom tasks; the morning run reads them before ranking and writes the day's candidates back.
+
+## Update boxes (artifact db, collection `notes`)
+Every action item (meetings, needs, priorities, missed, replies, waiting, personal email, deletions, hand-offs) has a box. "Save for tomorrow" writes a document with id `<date>_<section>_<item id>` and fields date, section, key, title, text, status ("new"), savedAt. "Ask Claude now" opens a new Claude chat seeded with the item and Brent's words, and saves the note with status "asked". The next morning run reads notes with status "new" or "asked", applies them, and sets status to "applied" with appliedOn.
+
+## Links
+Every link opens in a new tab (`<base target="_blank">` plus explicit targets).

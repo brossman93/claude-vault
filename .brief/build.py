@@ -5,13 +5,14 @@ Usage: python3 build.py data.json out.html [--preview preview.html]
 
 out.html is the artifact body (no doctype/html/head/body; the Artifact tool
 adds the skeleton). --preview also writes a standalone page for screenshots.
-The page keeps priorities in the artifact's `db` (collection `tasks`) and
+The page keeps priorities in the artifact's `db` (collection `tasks`), Brent's
+item updates in `notes` (read by the next morning run), and
 calls monday.com and Gmail through the `mcp` capability. Publish with
 capabilities: {"db": {}, "user": {}, "mcp": {"servers": [
   {"server": "monday.com", "tools": ["change_item_column_values"]},
   {"server": "Gmail", "tools": ["trash_thread"]}]}}
 """
-import base64, html, json, math, pathlib, sys, urllib.parse
+import base64, html, json, math, pathlib, re, sys, urllib.parse
 from datetime import date
 
 HERE = pathlib.Path(__file__).parent
@@ -29,14 +30,45 @@ def seed_href(seed):
     return 'https://claude.ai/new?q=' + urllib.parse.quote(seed, safe='') + '&surface=cowork&composer=mini'
 
 
+NT = ' target="_blank" rel="noopener"'
+OBSIDIAN_VAULT = 'Obsidian'
+
+
 def btn(b, cls='btn'):
     if not b:
         return ''
-    return f'<a class="{cls}" href="{e(seed_href(b["seed"]))}">{e(b["label"])}</a>'
+    return f'<a class="{cls}" href="{e(seed_href(b["seed"]))}"{NT}>{e(b["label"])}</a>'
 
 
 def link(title, url):
-    return f'<a href="{e(url)}">{e(title)}</a>' if url else e(title)
+    return f'<a href="{e(url)}"{NT}>{e(title)}</a>' if url else e(title)
+
+
+def slug(t):
+    return re.sub(r'[^a-z0-9]+', '-', str(t).lower()).strip('-')[:40] or 'item'
+
+
+def agenda_href(path):
+    p = path[:-3] if path.endswith('.md') else path
+    return 'obsidian://open?vault=' + urllib.parse.quote(OBSIDIAN_VAULT, safe='') + '&file=' + urllib.parse.quote(p, safe='')
+
+
+def note_box(sec, key, title):
+    """A small box under an item: save an update for tomorrow's run, or hand it to Claude now."""
+    return (f'<div class="nb" data-sec="{e(sec)}" data-key="{e(key)}" data-title="{e(title)}">'
+            f'<textarea rows="1" aria-label="Update or instruction about {e(title)}" '
+            f'placeholder="Update, or tell Claude what to do…"></textarea>'
+            f'<div class="nb-a"><button type="button" class="btn-sm nb-save">Save for tomorrow</button>'
+            f'<a class="btn-sm primary nb-ask" href="#"{NT}>Ask Claude now</a>'
+            f'<span class="nb-msg" aria-live="polite"></span></div></div>')
+
+
+def nudge_seed(w):
+    return (f"Draft a short, friendly follow-up nudge to {w['who']} about the item I've titled \"{w['title']}\" in my morning brief. "
+            f"I've been waiting since {w['since']} ({w['days']} business days). Find the context in my claude-vault Inbox.md and the "
+            "related People/ and Projects/ pages, and in monday.com if it's a monday item. Write it in my voice for the channel the "
+            "ask came through (email or a monday update), and keep it to a few sentences. Don't send anything. Done is a draft I can "
+            "copy, with a suggested subject line if it's an email.")
 
 
 def hour_label(h):
@@ -120,14 +152,17 @@ def calendar(d):
 
 
 # ---------- generic list ----------
-def items(lst, numbered=True):
+def items(lst, sec=None, numbered=True):
     out = '<ol class="list">'
     for i, it in enumerate(lst, 1):
         meta = ''
         if it.get('who'):
             meta = f'<span class="meta">{e(it["who"])}{" · " + e(it["where"]) if it.get("where") else ""}{" · " + e(it["when"]) if it.get("when") else ""}</span>'
+        agenda = (f'<p class="agenda"><a href="{e(agenda_href(it["agenda"]))}"{NT}>Open agenda in Obsidian</a></p>'
+                  if it.get('agenda') else '')
+        box = note_box(sec, it.get('id') or slug(it['title']), it['title']) if sec else ''
         out += (f'<li><span class="n">{i if numbered else ""}</span><div class="li-b"><h3>{link(it["title"], it.get("url"))}</h3>{meta}'
-                f'<p>{e(it["body"])}</p>{("<p class=b>" + btn(it.get("button")) + "</p>") if it.get("button") else ""}</div></li>')
+                f'<p>{e(it["body"])}</p>{agenda}{("<p class=b>" + btn(it.get("button")) + "</p>") if it.get("button") else ""}{box}</div></li>')
     return out + '</ol>'
 
 
@@ -138,10 +173,11 @@ def waiting(d):
     for w in d['waiting']:
         pct = w['days'] / scale * 100
         nudge = w['days'] > 3
-        rows += (f'<li><div class="w-h"><a href="{e(w["url"])}">{e(w["title"])}</a>'
-                 f'{"<span class=pill-warn>&#9650; Nudge</span>" if nudge else ""}</div>'
+        nl = (f'<a class="pill-warn nudge" href="{e(seed_href(nudge_seed(w)))}"{NT} title="Draft a follow-up to {e(w["who"])}">'
+              '&#9650; Nudge <span aria-hidden="true">&#8599;</span></a>') if nudge else ''
+        rows += (f'<li><div class="w-h">{link(w["title"], w.get("url"))}{nl}</div>'
                  f'<div class="w-bar"><span style="width:{pct:.1f}%" title="{w["days"]} business days"></span><b>{w["days"]} business days</b></div>'
-                 f'<p>{e(w["who"])} · since {e(w["since"])}. {e(w["note"])}</p></li>')
+                 f'<p>{e(w["who"])} · since {e(w["since"])}. {e(w["note"])}</p>{note_box("waiting", w.get("id") or slug(w["title"]), w["title"])}</li>')
     return f'<ul class="wait">{rows}</ul>'
 
 
@@ -157,8 +193,10 @@ def ac(d):
         pill = '<span class="pill-ok">&#9679; Active</span>' if active else '<span class="pill-off">&#9675; Inactive</span>'
         rates = (f'<div class="kv"><span>Open</span><b>{au["open"]:.0f}%</b></div><div class="kv"><span>Click</span><b>{au["click"]:.0f}%</b></div>'
                  if au.get('sends') and au.get('open') is not None else '')
+        yd = '—' if au.get('yday') is None else f'{au["yday"]:,}'
         tiles += (f'<div class="tile{" off" if not active else ""}"><div class="tile-h"><b>{e(au["name"])}</b>{pill}</div>'
-                  f'<div class="kvs"><div class="kv"><span>In it now</span><b>{au["now"]:,}</b></div><div class="kv"><span>Entered</span><b>{au["entered"]:,}</b></div>'
+                  f'<div class="kvs"><div class="kv yd"><span>{e(au.get("ydayLabel", "Yesterday"))}</span><b>{yd}</b></div>'
+                  f'<div class="kv"><span>In it now</span><b>{au["now"]:,}</b></div><div class="kv"><span>Entered</span><b>{au["entered"]:,}</b></div>'
                   f'<div class="kv"><span>Sends</span><b>{au["sends"]:,}</b></div>{rates}</div><p>{e(au["note"])}</p></div>')
     ug = a['automations'][0]
     lead = f'<p class="flag">{"<span class=pill-warn>&#9650; Stall</span> " if a.get("stall") else ""}<b>{e(a["lead"])}</b></p>' if a.get('lead') else ''
@@ -202,7 +240,8 @@ def deletions(d):
         n = len(dl['threads'])
         rows += (f'<li data-del="{i}"><div class="d-b"><b>{e(dl["sender"])}</b><span>{e(dl["what"])}</span></div>'
                  f'<span class="cnt">{n}</span><div class="d-a"><button type="button" class="btn-sm trash" id="trash-{i}">Move {n} to Trash</button>'
-                 f'<a class="btn-sm ghost" href="{e(seed_href(seed))}">Unsubscribe</a></div><p class="d-msg" aria-live="polite"></p></li>')
+                 f'<a class="btn-sm ghost" href="{e(seed_href(seed))}"{NT}>Unsubscribe</a></div><p class="d-msg" aria-live="polite"></p>'
+                 f'{note_box("deletions", slug(dl["sender"]), dl["sender"])}</li>')
     return (f'<ul class="dels">{rows}</ul><p class="note">Move to Trash asks once more before it acts, and Gmail keeps trashed mail for 30 days. '
             'Unsubscribe opens Claude to find the link for you.</p>')
 
@@ -255,7 +294,7 @@ ol.list{list-style:none;margin:0;padding:0}
 ol.list>li{display:flex;gap:14px;padding:12px 0;border-top:1px solid var(--hair)}
 ol.list>li:first-child{border-top:0}
 .n{color:var(--mute);font-size:14px;min-width:14px;padding-top:2px;font-variant-numeric:tabular-nums}
-.li-b{min-width:0}.li-b p{color:var(--soft)}
+.li-b{min-width:0;flex:1}.li-b p{color:var(--soft)}
 .meta{display:block;font-size:12px;color:var(--mute);margin-bottom:2px}
 .b{margin-top:10px!important}
 .btn{display:inline-block;background:var(--clay);border:1px solid var(--clay);color:var(--on-clay);border-radius:8px;padding:9px 16px;font:500 13px var(--f-body);text-decoration:none;cursor:pointer}
@@ -266,7 +305,7 @@ ol.list>li:first-child{border-top:0}
 .btn-sm.primary:hover{background:var(--clay-h)}
 .btn-sm.armed{background:var(--crit);border-color:var(--crit);color:var(--bg)}
 .btn-sm.ghost{background:transparent}
-button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--au);outline-offset:2px}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--au);outline-offset:2px}
 .note{color:var(--mute);font-size:13px;margin-top:8px}
 /* calendar */
 .cal{display:grid;gap:18px}
@@ -324,6 +363,18 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 #prio-done li .x{flex:1;min-width:0;text-decoration:line-through}
 #prio-done .check{color:var(--ok);font-weight:700}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:8px;font-size:13.5px;max-width:min(92vw,520px);z-index:9}
+/* update boxes */
+.nb{margin-top:8px}
+.nb textarea{display:block;width:100%;resize:none;overflow:hidden;font:14px/1.45 var(--f-body);color:var(--ink);background:var(--bg);border:1px solid var(--hair);border-radius:8px;padding:6px 10px;min-height:32px}
+.nb textarea::placeholder{color:var(--mute)}
+.nb textarea:focus{border-color:var(--edge);outline:2px solid var(--au);outline-offset:1px}
+.nb-a{display:none;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.nb.has .nb-a,.nb:focus-within .nb-a{display:flex}
+.nb-msg{font-size:12.5px;color:var(--mute)}
+.agenda{margin-top:6px!important;font-size:13px}
+.agenda a{color:var(--au);text-decoration:none;font-weight:500}.agenda a:hover{text-decoration:underline}
+a.nudge{text-decoration:none;cursor:pointer}a.nudge:hover{background:var(--warn);color:var(--bg)}
+.kv.yd b{color:var(--ink)}
 /* waiting */
 .wait{list-style:none;margin:0;padding:0;display:grid;gap:14px}
 .w-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-weight:600}
@@ -346,7 +397,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 .tile{background:var(--card);border:1px solid var(--hair);border-radius:10px;padding:12px 14px;min-width:0}
 .tile.off{background:transparent;border-style:dashed}
 .tile-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:8px}
-.kvs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 6px;margin-bottom:8px}
+.kvs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 6px;margin-bottom:8px}
 .kv span{display:block;font-size:11.5px;color:var(--mute)}
 .kv b{font-size:16px;font-variant-numeric:tabular-nums}
 .kv.wide{grid-column:span 2}
@@ -393,6 +444,8 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
   .dels li{grid-template-columns:1fr auto}
   .d-a{grid-column:1/-1}
   .yday li{grid-template-columns:1fr}.tag{justify-self:start}
+  .kvs{grid-template-columns:repeat(2,1fr)}
+  .task .nb{grid-column:1/-1}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 '''
@@ -422,12 +475,13 @@ JS = r'''
   function render(){
     const v = visible();
     listEl.innerHTML = v.map((t,i)=>{
-      const title = t.url ? '<a class="tt" href="'+esc(t.url)+'">'+esc(t.title)+'</a>' : '<span class="tt">'+esc(t.title)+'</span>';
+      const title = t.url ? '<a class="tt" href="'+esc(t.url)+'" target="_blank" rel="noopener">'+esc(t.title)+'</a>' : '<span class="tt">'+esc(t.title)+'</span>';
       const chips = (t.source==='custom' ? '<span class="chip mine">Your task</span>' : '') + prChip(t.priority) + (t.status?'<span class="chip">'+esc(t.status)+'</span>':'') + dueChip(t.due) + (t.board?'<span class="chip">'+esc(t.board)+'</span>':'');
       return '<li class="task" data-id="'+esc(t.id)+'"><button type="button" class="grip" aria-label="Drag to reorder '+esc(t.title)+'">'+GRIP+'</button>'+
-        '<span class="rk">'+(i+1)+'</span><div class="tb">'+title+'<div class="chips">'+chips+'</div>'+(t.why?'<p class="why">'+esc(t.why)+'</p>':'')+'</div>'+
+        '<span class="rk">'+(i+1)+'</span><div class="tb">'+title+'<div class="chips">'+chips+'</div>'+(t.why?'<p class="why">'+esc(t.why)+'</p>':'')+noteBox('priorities',t.id,t.title)+'</div>'+
         '<div class="ta"><button type="button" class="btn-sm mv up" aria-label="Move up"'+(i===0?' disabled':'')+'>&uarr;</button><button type="button" class="btn-sm mv dn" aria-label="Move down"'+(i===v.length-1?' disabled':'')+'>&darr;</button>'+
         '<button type="button" class="btn-sm primary done">&#10003; Done</button></div></li>'; }).join('') || '<li class="task"><span></span><span></span><p class="why">Nothing open. Add a task below.</p></li>';
+    restoreBoxes(listEl);
     const d = doneToday();
     doneEl.innerHTML = d.map(t=>'<li data-id="'+esc(t.id)+'"><span class="check">&#10003;</span><span class="x">'+esc(t.title)+'</span><button type="button" class="btn-sm ghost undo">Undo</button></li>').join('');
   }
@@ -504,6 +558,65 @@ JS = r'''
     });
   });
 
+  // Update boxes: "Save for tomorrow" stores a note the next morning run reads and applies;
+  // "Ask Claude now" opens a new Claude chat with the item and Brent's words.
+  const SEC = {meetings:'Meetings today', needs:'Needs attention', priorities:'Today\u2019s priorities', missed:'Missed in monday',
+    replies:'AU email, replies owed', waiting:'Waiting on others', pmail:'Personal email, important', deletions:'Personal email, suggested deletions', hand:'Could hand to Claude'};
+  const drafts = {}, saved = {};
+  const noteId = (sec,key) => (D.date+'_'+sec+'_'+key).replace(/[^A-Za-z0-9_-]/g,'-').slice(0,120);
+  function noteBox(sec,key,title){
+    return '<div class="nb" data-sec="'+esc(sec)+'" data-key="'+esc(key)+'" data-title="'+esc(title)+'"><textarea rows="1" aria-label="Update or instruction about '+esc(title)+'" placeholder="Update, or tell Claude what to do\u2026"></textarea>'+
+      '<div class="nb-a"><button type="button" class="btn-sm nb-save">Save for tomorrow</button><a class="btn-sm primary nb-ask" href="#" target="_blank" rel="noopener">Ask Claude now</a><span class="nb-msg" aria-live="polite"></span></div></div>';
+  }
+  function seedFor(box,text){
+    const sec=SEC[box.dataset.sec]||box.dataset.sec;
+    return 'From my morning brief for '+D.dayDate+', the item I\u2019ve titled "'+box.dataset.title+'" under '+sec+'. My note: '+text+
+      '\n\nFind this item\u2019s details in my claude-vault (Daily/'+D.date+'.md and Inbox.md) and in my connected tools, then do what my note asks. '+
+      'Draft any message rather than sending it unless my note says to send. Done is the action finished, or a draft ready for me to review.';
+  }
+  const askHref = (box,text) => 'https://claude.ai/new?q='+encodeURIComponent(seedFor(box,text))+'&surface=cowork&composer=mini';
+  function grow(ta){ ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,180)+'px'; }
+  function boxState(box){
+    const ta=box.querySelector('textarea'), id=noteId(box.dataset.sec,box.dataset.key), text=ta.value.trim();
+    box.querySelector('.nb-ask').href = text ? askHref(box,text) : '#';
+    box.classList.toggle('has', !!text);
+    const msg=box.querySelector('.nb-msg');
+    if(saved[id] && saved[id]===text) msg.textContent='Saved. Tomorrow\u2019s brief will pick it up.';
+    else if(saved[id]) msg.textContent='Edited since you saved.';
+    else msg.textContent='';
+  }
+  function restoreBoxes(root){
+    (root||document).querySelectorAll('.nb').forEach(box=>{
+      const id=noteId(box.dataset.sec,box.dataset.key), ta=box.querySelector('textarea');
+      const v = drafts[id]!=null ? drafts[id] : (saved[id]||'');
+      if(ta.value!==v){ ta.value=v; grow(ta); }
+      boxState(box);
+    });
+  }
+  async function saveNote(box, status){
+    const ta=box.querySelector('textarea'), text=ta.value.trim(), msg=box.querySelector('.nb-msg'), id=noteId(box.dataset.sec,box.dataset.key);
+    if(!text){ msg.textContent='Type an update first.'; return false; }
+    if(!db){ msg.textContent='Saving needs this page open on claude.ai.'; return false; }
+    try{
+      await db.doc('notes/'+id).set({date:D.date, section:box.dataset.sec, key:box.dataset.key, title:box.dataset.title, text, status, savedAt:new Date().toISOString()});
+      saved[id]=text; boxState(box);
+      if(status==='asked') msg.textContent='Opened in Claude, and saved for tomorrow.';
+      return true;
+    }catch(err){ msg.textContent = err && err.code==='quota_exceeded' ? 'The note store is full.' : 'Could not save this note.'; return false; }
+  }
+  document.addEventListener('input', ev=>{
+    const ta=ev.target.closest('.nb textarea'); if(!ta) return; const box=ta.closest('.nb');
+    drafts[noteId(box.dataset.sec,box.dataset.key)]=ta.value; grow(ta); boxState(box);
+  });
+  document.addEventListener('click', ev=>{
+    const sv=ev.target.closest('.nb-save'); if(sv){ saveNote(sv.closest('.nb'),'new'); return; }
+    const ask=ev.target.closest('.nb-ask'); if(!ask) return;
+    const box=ask.closest('.nb');
+    if(!box.querySelector('textarea').value.trim()){ ev.preventDefault(); box.querySelector('.nb-msg').textContent='Type what you want Claude to do first.'; return; }
+    saveNote(box,'asked');
+  });
+  restoreBoxes();
+
   // Start from today's list in the page; the store replaces it once it answers.
   tasks = D.tasks.map(t=>Object.assign({source:'monday',active:true,done:false},t));
   render();
@@ -514,6 +627,10 @@ JS = r'''
   C.use('db').then(d=>{
     db=d; if(!db){ statusEl.textContent='Saving is off in this view, so changes last until you reload.'; return; }
     statusEl.textContent='Your order and done tasks are saved.';
+    db.collection('notes').onSnapshot(snap=>{
+      snap.docs.forEach(x=>{ const v=x.data(); if(v && v.date===D.date) saved[x.id]=v.text||''; });
+      restoreBoxes();
+    }, ()=>{});
     db.collection('tasks').onSnapshot(snap=>{
       if(snap.empty) return;
       tasks = snap.docs.map(s=>Object.assign({id:s.id}, s.data()));
@@ -528,34 +645,35 @@ def build(d):
     f64 = font_b64()
     font_css = (f'@font-face{{font-family:"Fraunces";src:url(data:font/woff2;base64,{f64}) format("woff2");font-weight:600;font-style:normal}}' if f64 else '')
     acts = ''.join(f'<div class="act"><b>{e(a["time"])}</b><p>{e(a["text"])}</p></div>' for a in d['acts'])
-    js_data = {'date': d['date'], 'tasks': d['tasks'], 'deletions': d['deletions']}
+    js_data = {'date': d['date'], 'tasks': d['tasks'], 'deletions': d['deletions'], 'dayDate': d['dayDate']}
     data_json = json.dumps(js_data).replace('</', '<\\/')
     fam_today = d['days'][0]
-    pmail_html = items(d['pmail'])
+    pmail_html = items(d['pmail'], 'pmail')
     secs = []
     if d.get('weekly'):
         secs.append(f'<section><h2>{e(d["weekly"]["title"])}</h2>{d["weekly"]["html"]}</section>')
     secs.append(f'<section><h2>{"Today and tomorrow" if len(d["days"]) > 1 else "Today"}</h2>{calendar(d)}</section>')
     if d.get('meetings'):
-        secs.append(f'<section><h2>Meetings today</h2>{items(d["meetings"])}</section>')
-    secs.append(f'<section><h2>Needs attention</h2>{items(d["needs"])}</section>')
+        secs.append(f'<section><h2>Meetings today</h2>{items(d["meetings"], "meetings")}</section>')
+    secs.append(f'<section><h2>Needs attention</h2>{items(d["needs"], "needs")}</section>')
     secs.append(f'''<section id="priorities"><h2>Today’s priorities <small>drag to reorder, or add your own</small></h2>
 <div class="prio-wrap"><ol id="prio-list" aria-label="Priorities, in order"></ol>
 <form class="add" id="add-form" autocomplete="off"><label for="new-task" class="sr" hidden>New task</label>
 <input id="new-task" name="new-task" placeholder="Add a task that isn’t listed…" maxlength="160"><button class="btn-sm primary" type="submit">Add</button></form>
 <div class="prio-foot"><span id="prio-status" aria-live="polite"></span><span>Done also sets the item to Done in monday.</span></div></div>
 <ul id="prio-done" aria-label="Done today"></ul><p class="note">{e(d.get("goalsNote", ""))}</p></section>''')
-    secs.append(f'<section><div class="two"><div><h2>Missed in monday</h2>{items(d["missed"])}</div><div><h2>Resolved</h2>{items(d["resolved"])}</div></div></section>')
+    secs.append(f'<section><div class="two"><div><h2>Missed in monday</h2>{items(d["missed"], "missed")}</div><div><h2>Resolved</h2>{items(d["resolved"])}</div></div></section>')
     if d.get('replies'):
-        secs.append(f'<section><h2>AU email, replies owed</h2>{items(d["replies"])}</section>')
+        secs.append(f'<section><h2>AU email, replies owed</h2>{items(d["replies"], "replies")}</section>')
     secs.append(f'<section><h2>Waiting on others</h2>{waiting(d)}</section>')
     secs.append(f'<section><h2>Yesterday’s work</h2>{yesterday(d)}</section>')
     secs.append(f'<section><h2>ActiveCampaign <small>ENR nurture automations</small></h2>{ac(d)}</section>')
     secs.append(f'<section><h2>Higher ed news</h2>{news(d)}</section>')
     secs.append(f'<section><h2>Personal email, important</h2>{pmail_html}</section>')
     secs.append(f'<section><h2>Personal email, suggested deletions</h2>{deletions(d)}</section>')
-    secs.append(f'<section><h2>Could hand to Claude</h2>{items(d["hand"])}</section>')
+    secs.append(f'<section><h2>Could hand to Claude</h2>{items(d["hand"], "hand")}</section>')
     return f'''<title>Morning Brief</title>
+<base target="_blank">
 <style>{font_css}{CSS}</style>
 <div class="band top"><div class="wrap">
 <p class="date">{e(d["dayDate"])}</p>
