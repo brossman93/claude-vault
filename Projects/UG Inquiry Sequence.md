@@ -9,7 +9,8 @@ The UG inquiry nurture in [[ActiveCampaign]]. Copy lives in a monday doc.
 - Copy changes from Lance Kaltenbaugh (9/29): name the top 3 business majors in TP4-1 (likely sport management, finance, marketing; John/Sue to confirm); say "majors" not "degrees" on the landing page; swap the programs and "conversations with faculty" sections.
 - Viewbook mailing: strategy approved 9/24; wait for Tracy's mailing list so nobody is mailed twice.
 
-- **Possible stall (10/14):** no entries 10/13; the latest entry date in the "Date Entered UG Inq Nurture" field is 10/2, and the automation's entered count held at 1,066. Check the inquiry feed and the date-stamp step.
+- **Stall since 10/2 (found 10/14):** the router (160) started requiring spelled-out entry terms on 10/2, but Slate sent codes like "27/FA". Fixed 10/14: the Zapier formatter now converts them (Zap v10).
+- **Form Fills only, on purpose:** of 381 October RFIs on list 551, Origin Source = Data Import 186, Event Registration 140, blank 45, Form Fills 10. Brent won't add the non-Form-Fills contacts until [[Tracy Lantz|Tracy]] adds a deeper source field (college fair, CommonApp, etc.). Open: the 8 Form Fills contacts since 10/2 who missed the nurture.
 
 ## Ideas to test
 - A Core Curriculum email near the pathway emails, selling a well-rounded AU education.
