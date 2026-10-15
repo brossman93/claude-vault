@@ -27,6 +27,7 @@ AC automation 124, "ENR: update - Assigned Recruiter", sets each contact's admis
 ## Decisions (10/15 audit)
 - Fixed Josh's segment: it used OR'd groups (state ≠ Ohio, or state ≠ OH), which caught every Ohio UG. Now one AND group with state not blank.
 - Julia's branch now catches the CAS pathways, not just Education.
+- Grad branches now check App Student Type as well as Inq Student Type.
 - Phones fixed: Cara's branch now sets her phone; Ryan's no longer leaves a stale phone number from a prior assignment.
 - David Maloney stays as the fallback.
 - Last-name branches stay last and keep the Slate code OR'd in. Slate assigns by the same letters, so codes and last names shouldn't disagree. They handle contacts that start outside Slate (e.g., the InPursuit form) with no code yet.
@@ -35,6 +36,5 @@ AC automation 124, "ENR: update - Assigned Recruiter", sets each contact's admis
 ## Known limits
 - INTL, HCL, MVS, and Elyria rely entirely on Slate sending the code; without it, contacts sort by last name.
 - State is free text: spellings other than "Ohio" or "OH" count as out of state.
-- Grad branches checked Inq Student Type only, not App Student Type (as of the 10/15 audit).
 - FA counselors are in the spreadsheet but not in AC (no fields).
 - AC uses "Allison Gilbert"/"Allison"; the spreadsheet says "Alli."
