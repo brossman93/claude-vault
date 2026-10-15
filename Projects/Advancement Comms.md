@@ -8,3 +8,4 @@ Email work for Advancement, via the Marketing x Advancement touchbase. Contacts:
 - **Madrigals:** alumni email, maybe a postcard (10/5).
 - **Accent Magazine:** kept; moving to an outside firm.
 - **Viewbook:** on the 10/14 agenda ("what's needed?").
+- **Homecoming recap email:** new monday item 10/14 (High, next action 10/23). [[Jeff Alix|Jeff]] and the alumni team want a recap to all alumni: highlights, what was new, the Schar event, a save the date. [[Madalyn Huvler]] owns intake; target end of next week or end of month.

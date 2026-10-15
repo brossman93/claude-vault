@@ -185,12 +185,39 @@ def yesterday(d):
     return '<ul class="yday">' + ''.join(f'<li><span class="tag">{e(y["tag"])}</span><span>{e(y["text"])}</span></li>' for y in d['yesterday']) + '</ul>'
 
 
+def bands_block(a):
+    """Engagement score bands: active contacts per saved segment, trailing report days, change column."""
+    b = a.get('engagementBands')
+    if not b:
+        return ''
+    days = b.get('days') or []
+    head = '<th>Band</th>' + ''.join(f'<th>{e(dy)}</th>' for dy in days) + f'<th>{e(b.get("changeLabel", "Change"))}</th>'
+    def num(v):
+        return '—' if v is None else f'{v:,}'
+    def chg(v):
+        if v is None:
+            return '—'
+        return '0' if v == 0 else (f'+{v:,}' if v > 0 else f'−{abs(v):,}')
+    rows = ''
+    for r in b.get('rows', []):
+        lab = link(r['label'], r.get('url'))
+        rows += (f'<tr class="{"tot" if r.get("total") else ""}"><td>{lab}</td>' + ''.join(f'<td>{num(v)}</td>' for v in r.get('values', []))
+                 + f'<td>{chg(r.get("change"))}</td></tr>')
+    cap = e(b.get('caption', 'Engagement score bands'))
+    if b.get('url'):
+        cap += f' <a href="{e(b["url"])}"{NT}>{e(b.get("linkText", "Segments in AC"))} &#8599;</a>'
+    note = f'<p class="note">{e(b["note"])}</p>' if b.get('note') else ''
+    return (f'<figure class="ug bands"><figcaption>{cap}</figcaption><table class="sends"><thead><tr>{head}</tr></thead>'
+            f'<tbody>{rows}</tbody></table>{note}</figure>')
+
+
 def ac(d):
     a = d['ac']
     tiles = ''
     for au in a['automations']:
         active = au['status'] == 'Active'
-        pill = '<span class="pill-ok">&#9679; Active</span>' if active else '<span class="pill-off">&#9675; Inactive</span>'
+        pill = ('<span class="pill-ok">&#9679; Active</span>' if active else
+                '<span class="pill-warn">&#10074;&#10074; Paused</span>' if au['status'] == 'Paused' else '<span class="pill-off">&#9675; Inactive</span>')
         rates = (f'<div class="kv"><span>Open</span><b>{au["open"]:.0f}%</b></div><div class="kv"><span>Click</span><b>{au["click"]:.0f}%</b></div>'
                  if au.get('sends') and au.get('open') is not None else '')
         yd = '—' if au.get('yday') is None else f'{au["yday"]:,}'
@@ -229,18 +256,18 @@ def ac(d):
     sched = f'<p class="note">{e(a["scheduled"])}</p>' if a.get('scheduled') else ''
     if not ug.get('emails'):
         flag = f'<p class="flag"><span class="pill-warn">&#9650; Check</span> {e(a["flag"])}</p>' if a.get('flag') else ''
-        return f'{lead}{rfis}{mails}{flag}<div class="tiles">{tiles}</div>{sends}{sched}'
+        return f'{lead}{rfis}{bands_block(a)}{mails}{flag}<div class="tiles">{tiles}</div>{sends}{sched}'
     rows = ''
     OMAX, CMAX = 50, 10
-    for name, sends, op, cl in ug['emails']:
-        low = sends < 50
-        rows += (f'<div class="bar-row{" low" if low else ""}"><span class="bl">{e(name)}<small>{sends:,} sends</small></span>'
-                 f'<span class="bt"><span class="bo" style="width:{min(op, OMAX) / OMAX * 100:.1f}%" title="{e(name)}: {op:.1f}% open, {sends} sends"></span><em>{op:.0f}%</em></span>'
-                 f'<span class="bt"><span class="bc" style="width:{min(cl, CMAX) / CMAX * 100:.1f}%" title="{e(name)}: {cl:.1f}% click, {sends} sends"></span><em>{cl:.1f}%</em></span></div>')
+    for name, ns, op, cl in ug['emails']:
+        low = ns < 50
+        rows += (f'<div class="bar-row{" low" if low else ""}"><span class="bl">{e(name)}<small>{ns:,} sends</small></span>'
+                 f'<span class="bt"><span class="bo" style="width:{min(op, OMAX) / OMAX * 100:.1f}%" title="{e(name)}: {op:.1f}% open, {ns} sends"></span><em>{op:.0f}%</em></span>'
+                 f'<span class="bt"><span class="bc" style="width:{min(cl, CMAX) / CMAX * 100:.1f}%" title="{e(name)}: {cl:.1f}% click, {ns} sends"></span><em>{cl:.1f}%</em></span></div>')
     chart = (f'<figure class="ug"><figcaption>UG Inquiry nurture, by touchpoint <small>lifetime, as of {e(a["asOf"])}; faded rows have under 50 sends</small></figcaption>'
              f'<div class="bar-row head"><span></span><span>Open rate <small>0–50%</small></span><span>Click rate <small>0–10%</small></span></div>{rows}</figure>')
     flag = f'<p class="flag"><span class="pill-warn">&#9650; Check</span> {e(a["flag"])}</p>' if a.get('flag') else ''
-    return f'{lead}{rfis}{mails}{flag}<div class="tiles">{tiles}</div>{chart}{sends}{sched}'
+    return f'{lead}{rfis}{bands_block(a)}{mails}{flag}<div class="tiles">{tiles}</div>{chart}{sends}{sched}'
 
 
 def news(d):
@@ -429,6 +456,7 @@ a.nudge{text-decoration:none;cursor:pointer}a.nudge:hover{background:var(--warn)
 .rfi small{font-size:11.5px;color:var(--mute)}
 .rfi a{grid-column:1/-1;font-size:12.5px;margin-top:6px}
 .rfi p{grid-column:1/-1;font-size:12.5px;color:var(--soft);margin:4px 0 0}
+.ug.bands{margin:0 0 14px}.bands .sends{min-width:360px}.bands figcaption a{font-weight:400;font-size:12.5px;margin-left:8px}.sends tr.tot td{font-weight:600;border-top:1px solid var(--edge)}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
 .tile{background:var(--card);border:1px solid var(--hair);border-radius:10px;padding:12px 14px;min-width:0}
 .tile.off{background:transparent;border-style:dashed}

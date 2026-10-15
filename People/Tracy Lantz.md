@@ -6,6 +6,7 @@
 - **Rule (10/12–13):** campus events and registrations are built in Slate via a ticket, not in AC. She wants to discuss how events are handled before another event is scheduled.
 
 ## Brent owes Tracy
+- Check the AC unsubscribe link and unsubscribe a contact she forwarded (10/14).
 - Review of the Slate "International App Started" mailings, with recommendations to cut sends (asked 10/8).
 
 ## Waiting on Tracy

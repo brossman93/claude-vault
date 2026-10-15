@@ -20,6 +20,8 @@ Nov. 14 is both the UG Preview Day and [[ATS Email Marketing|Seminary]] Preview 
 
 - Registration form updated with the new pathways (Brent, 10/13); Website Event Page marked done.
 - Related: a new seminary event request (Wounded Healer, Campus Requests) uses the same event page plus registration form setup; Bethany Frazer asked Madalyn 10/14 to send Brent the AC form fields, which runs into the same Slate-vs-AC question.
+- **Decided 10/14 (Team Touchbase):** Tracy may build seminary event registration in Slate if she wants; marketing supports either way. Wounded Healer (Nov. 11) uses AC form 29 for now; Bethany embedded it 10/14.
+- UG comms sequence marked Done in monday 10/14. Seminary inquiry email due 10/15; confirmation series 10/22.
 
 ## Decisions
 - Seminary promotion prioritized over nursing (10/8).

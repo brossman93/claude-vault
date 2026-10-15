@@ -12,6 +12,9 @@ The UG inquiry nurture in [[ActiveCampaign]]. Copy lives in a monday doc.
 - **Stall since 10/2 (found 10/14):** the router (160) started requiring spelled-out entry terms on 10/2, but Slate sent codes like "27/FA". Fixed 10/14: the Zapier formatter now converts them (Zap v10).
 - **Form Fills only, on purpose:** of 381 October RFIs on list 551, Origin Source = Data Import 186, Event Registration 140, blank 45, Form Fills 10. Brent won't add the non-Form-Fills contacts until [[Tracy Lantz|Tracy]] adds a deeper source field (college fair, CommonApp, etc.). Open: the 8 Form Fills contacts since 10/2 who missed the nurture.
 
+- **Paused 10/14, 3:18 PM ET** (AC shows the automation paused, 279 contacts in it vs. 551 on 10/13). Entries resumed 10/14 (1 that day) before the pause.
+- **Programs of Distinction email** went live 10/14; Ashbrook asked the same day that the scholarship amount not be stated. Fix pending.
+
 ## Ideas to test
 - A Core Curriculum email near the pathway emails, selling a well-rounded AU education.
 - An inquiry survey: where they are in the search, and what question they most need answered. Needs an incentive.

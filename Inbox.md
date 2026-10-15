@@ -3,12 +3,13 @@
 Open threads from Brent's AU Outlook inbox. First full pass 2026-10-13 (20 conversations, back to June). The morning report reads this page for Needs attention and Waiting on others; move items to Done when they close.
 
 ## Brent owes a reply
-- **Cara's comm flow question** (10/13): can she see when an inquiry or forwarded RFI enters the seminary flow, and should she hold off calling until a set point (the original map had her reach out after the first few emails)? See [[Seminary Inquiry Sequence]].
+- **Ashbrook scholarship amount** (10/14): Rhyan at the Ashbrook Center saw the Programs of Distinction test and asked that the scholarship be mentioned without its dollar amount. The email is live in the inquiry flow. See [[UG Inquiry Sequence]].
+- **Tracy's unsubscribe report** (10/14): a contact couldn't use the unsubscribe link in an AC email; she asks Brent to check the link and unsubscribe the person. See [[Tracy Lantz]].
 - **Kyle's postcard series** (10/12): 4 weekly postcards from November to AC contacts who haven't applied, each with a QR code to a themed social video and a consistent apply CTA. He wants edits and video picks. See [[Application Push]].
 - **Tracy's international emails** (10/8): review the Slate "International App Started" mailings and recommend a revamp with fewer sends. Doc attached in the thread. See [[Tracy Lantz]].
 
 ## Brent said he'd do it
-- **New admissions headshots** (10/12): Sydney sent six new headshots; Brent replied he'd swap them into the emails. See [[Sydney Good]].
+- **Seminary event registration** (10/14 touchbase): tell Tracy she can choose a Slate form or the AC form for the seminary event; Brent emailed her 10/14 that building events in Slate works. See [[Preview Day 2026-11-14]].
 
 ## Waiting on others
 - **AC lead scoring bug** (ticket opened ~9/15): Visit Scheduled Date and RFI Date rules don't calculate. Escalated to AC engineering 9/17; last check-in 9/29, no fix yet. Brent has followed up three times. See [[ActiveCampaign]].
@@ -21,11 +22,15 @@ Open threads from Brent's AU Outlook inbox. First full pass 2026-10-13 (20 conve
 - **CampusESP Fall 2027 families data**: CampusESP asked for a full Fall 2027 cohort file (9/30). Brent is waiting on Amy Baker for the missing incoming FA'27 family data; he followed up 10/13.
 
 ## FYI
+- **Updated staff assignment list** (Tracy, 10/14): new admissions and financial aid counselor assignments attached; relevant to replacing Sue, Lauren, and Christina in comms. See [[Tracy Lantz]].
+- **Marketing x Advancement topics** (Kyle, 10/14): Kyle added his topics to the thread, starting with the quiet-phase campaign. See [[Advancement Comms]].
 - **PRS launch plan** (Kyle, 10/13): see [[Psychology Research Scholars]].
 - **AC custom reports** (10/8): AC says its AI can produce all three requested reports; a walkthrough PDF is in the thread. Brent replied 10/13. See [[Reporting]].
 - **Engage 2027** (Slate conference, June 21–23, 2027, Disney): free registration if a Disney room is booked by Nov. 30. Brent forwarded it 10/5.
-- **Programs of Distinction copy** (9/14): KP promised Rhyan Opel a look at the final email once it's in the funnel.
 
 ## Done
-- Kyle's brainstorm on Peede's expectations: Brent replied 10/13 (automated team dashboard for visits and applications, among other ideas). See [[Kyle Hauenstein]].
+- Cara's comm flow question: Brent replied 10/14; Cara thanked him the same day. See [[Cara Selan]].
+- New admissions headshots: Brent sent resized versions 10/14 after Tracy said the originals were too large for Slate. See [[Sydney Good]].
+- Programs of Distinction follow-up: Brent told Rhyan 10/14 the email is live (closes KP's 9/14 promise; the amount fix is above).
+- Kyle's brainstorm on Peede's expectations: Brent replied 10/13 (Kyle replied 10/14 that he liked the Peede proofer idea) (automated team dashboard for visits and applications, among other ideas). See [[Kyle Hauenstein]].
 - McKnight attendance uploaded to Slate; attendees getting "Attended Seminary Event" (10/13). See [[Tracy Lantz]].
