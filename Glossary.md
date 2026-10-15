@@ -26,6 +26,8 @@
 | StriveScan | College fair RFI scanning tool |
 | CCP | College Credit Plus (Ohio dual enrollment) |
 | COBE | College of Business and Economics |
+| Slate code | Slate Assigned Recruiter Code (AC field 374): the recruiter's Slate username, e.g., `afinley4`. See [[Recruiter Assignment]] |
+| HCL / MVS / INTL | Recruiter territories: homeschool-classical-honors-Ashbrook / military-veterans / international |
 | FNP / NP | (Family) nurse practitioner; the main grad nursing interest |
 | Vinyl | Former seminary agency ($100K contract cut); also on PRS video |
 | Accent | AU's magazine |

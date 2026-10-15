@@ -16,6 +16,7 @@ Claude's working memory for Brent's AU marketing and communications work. Start 
 - [[Nursing Graduate Programs]]: new grad nursing marketing
 - [[HS Underclassmen Comms]]: 9th/10th grade inquiries
 - [[ActiveCampaign]]: AU's email/CRM build-out, Slate sync, scoring
+- [[Recruiter Assignment]]: AC automation 124 that assigns admission counselors
 - [[Reporting]]: comms metrics, scorecard, dashboards
 - [[Advancement Comms]]: Schar, Homecoming, Madrigals, Accent
 - [[Brand Guidelines]]: messaging section of the AU brand guidelines

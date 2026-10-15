@@ -11,6 +11,7 @@ AU's email/CRM infrastructure build-out.
 - Contact cleanup of ~120K contacts, tiered by engagement
 - SMS consent compliance (10DLC registration, privacy policy, form fixes)
 - UG inquiry nurture sequence running alongside one-time broadcasts ([[UG Inquiry Sequence]])
+- Recruiter assignment automation (124), audited and fixed 10/15 ([[Recruiter Assignment]])
 
 ## Slate sync and scoring
 - Site tracking script is live on the RFI form (9/30) and works for new contacts (confirmed 10/6). Bailey Raffield (Reworkflow) is adding it to the visit forms the week of 10/12.
