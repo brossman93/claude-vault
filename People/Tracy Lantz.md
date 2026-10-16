@@ -26,3 +26,6 @@
 
 ## Log
 - **McKnight event (10/1–10/2):** Brent sent attendance 10/9. Tracy said it should have been a Slate event ticket. Brent sent fixed phone numbers 10/12 (extra digits were country codes). 10/13: list uploaded to Slate; Noah is adding the "Attended Seminary Event" interaction to attendees. Done.
+
+## How Brent asks (10/15)
+- The Slate sync list above is Brent's wishlist, not active asks. He pushes a few things at a time. Current asks: source data for the ~3,500 event-registrant and Common App contacts, and Cara's BookMe link.

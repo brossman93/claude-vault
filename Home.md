@@ -31,7 +31,7 @@ Claude's working memory for Brent's AU marketing and communications work. Start 
 
 ## Recurring meetings
 - Marketing Team Touchbase: Mon and Wed, 9:00–9:20
-- KP 1x1: roughly weekly
+- KP 1x1: paused; KP is on leave until the new year
 - ADM x Marketing: Tuesdays, about every two weeks (9/22, 10/6)
 - Marketing x Advancement Touchbase: every other Wed, 2:30–3:30, Founders 303
 - Psych, Seminary, and Partnerships: with Kyle and Suzanne (10/8)
@@ -47,4 +47,4 @@ Claude's working memory for Brent's AU marketing and communications work. Start 
 - [[Phi Psi]], [[Faith and Ideas]], [[Reading and Listening]], [[Productivity System]]
 
 ## Daily notes
-Morning reports land in `Daily/`, one per weekday. Friday reviews land in `Weekly/`.
+Morning reports land in `Daily/`, one per weekday. Friday reviews land in `Weekly/` (latest: [[2026-W42]]).

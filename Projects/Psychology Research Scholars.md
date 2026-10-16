@@ -6,6 +6,7 @@ PRS is essentially an honors track for psych majors (roughly 20–30% of them). 
 
 ## Status
 - Oct–Jan is the application push; anything after is gravy. ~30–40 psych applicants so far vs. ~150/yr historically with no marketing (10/8).
+- **Inquiry emails approved (10/15):** Kyle approved the visuals in Teams, and the emails are set up and ready (open question in monday: does Chris see them before they go live?).
 - Psych Inquiry Emails in Proofing; Application Emails Active. Post-app segments: applied to PRS not AU; AU psych major not PRS; AU related major not PRS.
 - Inquiry additions: Signature Experiences email; Science and Tech pathway email rewritten around PRS with the student clip.
 - Assets: brochure (delivered ~10/5), PRS logo, green #005837, gold #cbb67b ([[Nicholas Fedorchak]]); 30-sec student clip on Vimeo ([[Katrina Beer]]).

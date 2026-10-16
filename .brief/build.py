@@ -258,14 +258,25 @@ def ac(d):
         flag = f'<p class="flag"><span class="pill-warn">&#9650; Check</span> {e(a["flag"])}</p>' if a.get('flag') else ''
         return f'{lead}{rfis}{bands_block(a)}{mails}{flag}<div class="tiles">{tiles}</div>{sends}{sched}'
     rows = ''
-    OMAX, CMAX = 50, 10
-    for name, ns, op, cl in ug['emails']:
+    OMAX, CMAX, TMAX = 50, 10, 20
+    # emails rows: [name, sends, open_rate, click_rate, ctor] exactly as AC's report returns them
+    # (click_rate = unique_subscriber_clicks / sends; ctor = unique clicks / unique opens). Never derive from total clicks.
+    has_ctor = any(len(r) > 4 for r in ug['emails'])
+    cols = ' three' if has_ctor else ''
+    for r in ug['emails']:
+        name, ns, op, cl = r[:4]
+        ct = r[4] if len(r) > 4 else None
         low = ns < 50
-        rows += (f'<div class="bar-row{" low" if low else ""}"><span class="bl">{e(name)}<small>{ns:,} sends</small></span>'
-                 f'<span class="bt"><span class="bo" style="width:{min(op, OMAX) / OMAX * 100:.1f}%" title="{e(name)}: {op:.1f}% open, {ns} sends"></span><em>{op:.0f}%</em></span>'
-                 f'<span class="bt"><span class="bc" style="width:{min(cl, CMAX) / CMAX * 100:.1f}%" title="{e(name)}: {cl:.1f}% click, {ns} sends"></span><em>{cl:.1f}%</em></span></div>')
-    chart = (f'<figure class="ug"><figcaption>UG Inquiry nurture, by touchpoint <small>lifetime, as of {e(a["asOf"])}; faded rows have under 50 sends</small></figcaption>'
-             f'<div class="bar-row head"><span></span><span>Open rate <small>0–50%</small></span><span>Click rate <small>0–10%</small></span></div>{rows}</figure>')
+        ctcell = ''
+        if has_ctor:
+            ctcell = ('<span class="bt"></span>' if ct is None else
+                      f'<span class="bt"><span class="bk" style="width:{min(ct, TMAX) / TMAX * 100:.1f}%" title="{e(name)}: {ct:.1f}% click-to-open"></span><em>{ct:.1f}%</em></span>')
+        rows += (f'<div class="bar-row{cols}{" low" if low else ""}"><span class="bl">{e(name)}<small>{ns:,} sends</small></span>'
+                 f'<span class="bt"><span class="bo" style="width:{min(op, OMAX) / OMAX * 100:.1f}%" title="{e(name)}: {op:.1f}% open, {ns} sends"></span><em>{op:.1f}%</em></span>'
+                 f'<span class="bt"><span class="bc" style="width:{min(cl, CMAX) / CMAX * 100:.1f}%" title="{e(name)}: {cl:.1f}% click, {ns} sends"></span><em>{cl:.1f}%</em></span>{ctcell}</div>')
+    thead = '<span>CTOR <small>0–20%</small></span>' if has_ctor else ''
+    chart = (f'<figure class="ug"><figcaption>UG Inquiry nurture, by touchpoint <small>lifetime, as of {e(a["asOf"])}; rates as AC reports them (click = unique clicks ÷ sends, CTOR = unique clicks ÷ unique opens); faded rows have under 50 sends</small></figcaption>'
+             f'<div class="bar-row{cols} head"><span></span><span>Open rate <small>0–50%</small></span><span>Click rate <small>0–10%</small></span>{thead}</div>{rows}</figure>')
     flag = f'<p class="flag"><span class="pill-warn">&#9650; Check</span> {e(a["flag"])}</p>' if a.get('flag') else ''
     return f'{lead}{rfis}{bands_block(a)}{mails}{flag}<div class="tiles">{tiles}</div>{chart}{sends}{sched}'
 
@@ -299,7 +310,7 @@ CSS = r'''
 :root{
   --bg:#FCFCFB; --wash:#F6F5F1; --card:#FFFFFF; --ink:#2E2C27; --soft:#5F5E57; --mute:#8E8D84;
   --hair:#E4E3DC; --edge:#DAD9D2; --clay:#C6613F; --clay-h:#AE5133; --on-clay:#FFFFFF;
-  --au:#2F6F9F; --fam:#B0761C; --open:#2F6F9F; --click:#B0761C;
+  --au:#2F6F9F; --fam:#B0761C; --open:#2F6F9F; --click:#B0761C; --ctor:#5E7F4A;
   --ok:#2E7D4F; --ok-bg:#E7F3EC; --warn:#9A5B00; --warn-bg:#FBEFD9; --off:#6B6A63; --off-bg:#EEEDE8;
   --chip:#F1F0EB; --crit:#B3261E; --crit-bg:#FBE9E7;
   --f-display:"Fraunces",Georgia,serif; --f-body:-apple-system,"Segoe UI",system-ui,sans-serif;
@@ -307,13 +318,13 @@ CSS = r'''
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#1A1A19; --wash:#222220; --card:#262624; --ink:#EDEBE4; --soft:#B9B7AE; --mute:#8C8A82;
   --hair:#34332F; --edge:#3B3A36; --clay:#D2704E; --clay-h:#E0805E; --on-clay:#1A1A19;
-  --au:#4F93C6; --fam:#B98228; --open:#4F93C6; --click:#B98228;
+  --au:#4F93C6; --fam:#B98228; --open:#4F93C6; --click:#B98228; --ctor:#86A86E;
   --ok:#7CC79A; --ok-bg:#1F3328; --warn:#E3B062; --warn-bg:#3A2E18; --off:#A3A19A; --off-bg:#2E2D2A;
   --chip:#2E2D2A; --crit:#F08C82; --crit-bg:#3D2321; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#1A1A19; --wash:#222220; --card:#262624; --ink:#EDEBE4; --soft:#B9B7AE; --mute:#8C8A82;
   --hair:#34332F; --edge:#3B3A36; --clay:#D2704E; --clay-h:#E0805E; --on-clay:#1A1A19;
-  --au:#4F93C6; --fam:#B98228; --open:#4F93C6; --click:#B98228;
+  --au:#4F93C6; --fam:#B98228; --open:#4F93C6; --click:#B98228; --ctor:#86A86E;
   --ok:#7CC79A; --ok-bg:#1F3328; --warn:#E3B062; --warn-bg:#3A2E18; --off:#A3A19A; --off-bg:#2E2D2A;
   --chip:#2E2D2A; --crit:#F08C82; --crit-bg:#3D2321; color-scheme:dark}
 *{box-sizing:border-box}
@@ -469,13 +480,14 @@ a.nudge{text-decoration:none;cursor:pointer}a.nudge:hover{background:var(--warn)
 .ug{margin:18px 0 0;background:var(--card);border:1px solid var(--hair);border-radius:10px;padding:14px 16px;overflow-x:auto}
 .ug figcaption{font-weight:600;margin-bottom:10px}.ug figcaption small{display:block;font-weight:400;color:var(--mute);font-size:12.5px}
 .bar-row{display:grid;grid-template-columns:minmax(150px,1.3fr) 1fr 1fr;gap:12px;align-items:center;padding:4px 0;min-width:520px}
+.bar-row.three{grid-template-columns:minmax(150px,1.3fr) 1fr 1fr 1fr;min-width:640px}
 .bar-row.head{font-size:12px;color:var(--soft);border-bottom:1px solid var(--hair);padding-bottom:6px;margin-bottom:2px}
 .bar-row.head small{color:var(--mute)}
 .bar-row.low{opacity:.55}
 .bl{font-size:13px;min-width:0}.bl small{display:block;color:var(--mute);font-size:11.5px;font-variant-numeric:tabular-nums}
 .bt{display:flex;align-items:center;gap:6px;background:linear-gradient(to right,var(--hair) 1px,transparent 1px) 0 0/50% 100%;}
-.bo,.bc{display:block;height:12px;border-radius:0 4px 4px 0;min-width:2px}
-.bo{background:var(--open)}.bc{background:var(--click)}
+.bo,.bc,.bk{display:block;height:12px;border-radius:0 4px 4px 0;min-width:2px}
+.bo{background:var(--open)}.bc{background:var(--click)}.bk{background:var(--ctor)}
 .bt em{font-style:normal;font-size:12px;color:var(--soft);font-variant-numeric:tabular-nums}
 .bar-row:hover:not(.head){background:var(--chip)}
 .sends{width:100%;border-collapse:collapse;font-size:13px;min-width:520px}

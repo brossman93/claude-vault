@@ -15,7 +15,7 @@ AU's email/CRM infrastructure build-out.
 
 ## Slate sync and scoring
 - Site tracking script is live on the RFI form (9/30) and works for new contacts (confirmed 10/6). Bailey Raffield (Reworkflow) is adding it to the visit forms the week of 10/12.
-- Lead scoring bug: Visit Scheduled Date and RFI Date rules don't calculate. AC support escalated to engineering 9/17; no fix as of 9/29.
+- Lead scoring bug (Visit Scheduled Date and RFI Date rules not calculating): resolved per Brent (10/15).
 - Program Finder fills score 15 points, behind RFI. Revisit after site tracking is fixed.
 - Send scoring bands (high/medium/low) to Slate instead of raw scores (10/7).
 - VIP status from the Program Finder isn't reaching Slate; [[Tracy Lantz|TL]] is building a query to tag them in AC.
