@@ -211,6 +211,106 @@ def bands_block(a):
             f'<tbody>{rows}</tbody></table>{note}</figure>')
 
 
+
+TP_RE = re.compile(r'TP\s*(\d+)(?:\s*-\s*(\d+))?', re.I)
+
+
+def touchpoint_charts(emails, as_of):
+    """UG nurture by touchpoint: three stacked line charts (open, click, CTOR) plus a
+    dropdown table of the numbers by email.
+
+    emails rows: [name, sends, open_rate, click_rate, ctor] exactly as AC's report returns
+    them (click_rate = unique_subscriber_clicks / sends; ctor = unique clicks / unique opens).
+    Never derive a rate from total clicks.
+
+    Each email is placed at its step (TP number). The line follows the main path: per step,
+    the email with no "-N" suffix, else the lowest N (TP4-1 General). Other versions at the
+    same step (pathways, TP3-2, TP9-2, TP11-2) are plotted as smaller dots. Under 50 sends =
+    hollow dot."""
+    has_ctor = any(len(r) > 4 and r[4] is not None for r in emails)
+    # ---- table (dropdown) ----
+    th = '<th>Email</th><th>Sends</th><th>Open rate</th><th>Click rate</th>' + ('<th>CTOR</th>' if has_ctor else '')
+    trs = ''
+    for r in emails:
+        name, ns, op, cl = r[:4]
+        ct = r[4] if len(r) > 4 else None
+        cells = f'<td>{e(name)}</td><td>{ns:,}</td><td>{op:.1f}%</td><td>{cl:.1f}%</td>'
+        if has_ctor:
+            cells += f'<td>{"" if ct is None else f"{ct:.1f}%"}</td>'
+        trs += f'<tr{" class=low" if ns < 50 else ""}>{cells}</tr>'
+    table = (f'<details class="lc-tbl"><summary>Numbers by email</summary>'
+             f'<div class="tbl-scroll"><table class="sends"><thead><tr>{th}</tr></thead><tbody>{trs}</tbody></table></div>'
+             f'<p class="note">Faded rows have under 50 sends.</p></details>')
+    # ---- placement ----
+    pts = []
+    for r in emails:
+        m = TP_RE.search(r[0])
+        if not m:
+            continue
+        pts.append({'row': r, 'step': int(m.group(1)), 'sub': int(m.group(2)) if m.group(2) else 0})
+    steps = sorted({p['step'] for p in pts})
+    if len(steps) < 2:
+        cap = f'UG Inquiry nurture, by touchpoint <small>lifetime, as of {e(as_of)}</small>'
+        return f'<figure class="ug lines"><figcaption>{cap}</figcaption>{table}</figure>'
+    main = {}
+    for p in pts:
+        cur = main.get(p['step'])
+        key = (p['sub'] if p['sub'] else 0, -p['row'][1])
+        if cur is None or key < (cur['sub'] if cur['sub'] else 0, -cur['row'][1]):
+            main[p['step']] = p
+    xpct = {st: i / (len(steps) - 1) * 100 for i, st in enumerate(steps)}
+    metrics = [(2, 'Open rate', 'o', 'open'), (3, 'Click rate', 'c', 'click')]
+    if has_ctor:
+        metrics.append((4, 'CTOR', 'k', 'click-to-open'))
+    out = ''
+    for idx, title, cls, word in metrics:
+        vals = [p['row'][idx] for p in pts if len(p['row']) > idx and p['row'][idx] is not None]
+        hi = max(vals) if vals else 1
+        step_sz = next(sz for sz in (0.5, 1, 2, 5, 10, 20, 25) if hi / sz <= 5)
+        ymax = max(step_sz * math.ceil(hi / step_sz + 1e-9), step_sz)
+        ticks = [round(i * step_sz, 2) for i in range(int(round(ymax / step_sz)) + 1)]
+        yp = lambda v: 100 - v / ymax * 100
+        grid = ''.join(f'<line x1="0" x2="100" y1="{yp(t):.2f}" y2="{yp(t):.2f}"/>' for t in ticks)
+        ylab = ''.join(f'<span class="yt" style="top:{yp(t):.2f}%">{t:g}%</span>' for t in ticks)
+        xlab = ''.join(f'<span class="xt" style="left:{xpct[st]:.2f}%">TP{st}</span>' for st in steps)
+        mline = [main[st] for st in steps if len(main[st]['row']) > idx and main[st]['row'][idx] is not None]
+        poly = ' '.join(f'{xpct[p["step"]]:.2f},{yp(p["row"][idx]):.2f}' for p in mline)
+        dots = ''
+        by_step = {}
+        for p in pts:
+            if p is not main[p['step']] and len(p['row']) > idx and p['row'][idx] is not None:
+                by_step.setdefault(p['step'], []).append(p)
+        for st, ps in by_step.items():
+            n = len(ps)
+            for i, p in enumerate(ps):
+                dx = (i - (n - 1) / 2) * 7 if n > 1 else 9
+                if st == steps[-1]:
+                    dx = -abs(dx) - 4
+                name, ns = p['row'][0], p['row'][1]
+                v = p['row'][idx]
+                dots += (f'<span class="pt br{" lo" if ns < 50 else ""}" tabindex="0" style="left:calc({xpct[st]:.2f}% + {dx:.1f}px);top:{yp(v):.2f}%" '
+                         f'data-n="{e(name)}" data-v="{v:.1f}% {word}" data-s="{ns:,} sends{" (under 50)" if ns < 50 else ""}" data-t="Branch version"></span>')
+        for p in mline:
+            name, ns = p['row'][0], p['row'][1]
+            v = p['row'][idx]
+            dots += (f'<span class="pt mn" tabindex="0" style="left:{xpct[p["step"]]:.2f}%;top:{yp(v):.2f}%" '
+                     f'data-n="{e(name)}" data-v="{v:.1f}% {word}" data-s="{ns:,} sends" data-t="Main path"></span>')
+        first, last = mline[0]['row'][idx], mline[-1]['row'][idx]
+        lab = (f'<span class="dl" style="left:{xpct[mline[0]["step"]]:.2f}%;top:{yp(first):.2f}%">{first:.1f}%</span>'
+               f'<span class="dl end" style="left:{xpct[mline[-1]["step"]]:.2f}%;top:{yp(last):.2f}%">{last:.1f}%</span>')
+        diff = last - first
+        out += (f'<div class="lc {cls}"><div class="lc-h"><b>{title}</b><span>{first:.1f}% → {last:.1f}% <small>({diff:+.1f} pts, TP{mline[0]["step"]} to TP{mline[-1]["step"]})</small></span></div>'
+                f'<div class="plot" role="img" aria-label="{title} by touchpoint, main path from {first:.1f}% to {last:.1f}%">'
+                f'<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><g class="g">{grid}</g>'
+                f'<line class="xh" x1="0" x2="0" y1="0" y2="100"/><polyline class="ln" points="{poly}"/></svg>'
+                f'{ylab}{xlab}{dots}{lab}<div class="tip" hidden></div></div></div>')
+    cap = (f'UG Inquiry nurture, engagement across the series <small>lifetime, as of {e(as_of)}; rates as AC reports them '
+           f'(click = unique clicks ÷ sends, CTOR = unique clicks ÷ unique opens). The line follows the main path '
+           f'(TP4-1 General at the pathway step); small dots are other versions at the same step; hollow dots have under 50 sends. '
+           f'Hover or tap a point for its email.</small>')
+    return f'<figure class="ug lines"><figcaption>{cap}</figcaption><div class="lcs">{out}</div>{table}</figure>'
+
+
 def ac(d):
     a = d['ac']
     tiles = ''
@@ -257,26 +357,7 @@ def ac(d):
     if not ug.get('emails'):
         flag = f'<p class="flag"><span class="pill-warn">&#9650; Check</span> {e(a["flag"])}</p>' if a.get('flag') else ''
         return f'{lead}{rfis}{bands_block(a)}{mails}{flag}<div class="tiles">{tiles}</div>{sends}{sched}'
-    rows = ''
-    OMAX, CMAX, TMAX = 50, 10, 20
-    # emails rows: [name, sends, open_rate, click_rate, ctor] exactly as AC's report returns them
-    # (click_rate = unique_subscriber_clicks / sends; ctor = unique clicks / unique opens). Never derive from total clicks.
-    has_ctor = any(len(r) > 4 for r in ug['emails'])
-    cols = ' three' if has_ctor else ''
-    for r in ug['emails']:
-        name, ns, op, cl = r[:4]
-        ct = r[4] if len(r) > 4 else None
-        low = ns < 50
-        ctcell = ''
-        if has_ctor:
-            ctcell = ('<span class="bt"></span>' if ct is None else
-                      f'<span class="bt"><span class="bk" style="width:{min(ct, TMAX) / TMAX * 100:.1f}%" title="{e(name)}: {ct:.1f}% click-to-open"></span><em>{ct:.1f}%</em></span>')
-        rows += (f'<div class="bar-row{cols}{" low" if low else ""}"><span class="bl">{e(name)}<small>{ns:,} sends</small></span>'
-                 f'<span class="bt"><span class="bo" style="width:{min(op, OMAX) / OMAX * 100:.1f}%" title="{e(name)}: {op:.1f}% open, {ns} sends"></span><em>{op:.1f}%</em></span>'
-                 f'<span class="bt"><span class="bc" style="width:{min(cl, CMAX) / CMAX * 100:.1f}%" title="{e(name)}: {cl:.1f}% click, {ns} sends"></span><em>{cl:.1f}%</em></span>{ctcell}</div>')
-    thead = '<span>CTOR <small>0–20%</small></span>' if has_ctor else ''
-    chart = (f'<figure class="ug"><figcaption>UG Inquiry nurture, by touchpoint <small>lifetime, as of {e(a["asOf"])}; rates as AC reports them (click = unique clicks ÷ sends, CTOR = unique clicks ÷ unique opens); faded rows have under 50 sends</small></figcaption>'
-             f'<div class="bar-row{cols} head"><span></span><span>Open rate <small>0–50%</small></span><span>Click rate <small>0–10%</small></span>{thead}</div>{rows}</figure>')
+    chart = touchpoint_charts(ug['emails'], a['asOf'])
     flag = f'<p class="flag"><span class="pill-warn">&#9650; Check</span> {e(a["flag"])}</p>' if a.get('flag') else ''
     return f'{lead}{rfis}{bands_block(a)}{mails}{flag}<div class="tiles">{tiles}</div>{chart}{sends}{sched}'
 
@@ -490,6 +571,29 @@ a.nudge{text-decoration:none;cursor:pointer}a.nudge:hover{background:var(--warn)
 .bo{background:var(--open)}.bc{background:var(--click)}.bk{background:var(--ctor)}
 .bt em{font-style:normal;font-size:12px;color:var(--soft);font-variant-numeric:tabular-nums}
 .bar-row:hover:not(.head){background:var(--chip)}
+.ug.lines{overflow:visible}
+.lcs{display:grid;gap:22px}
+.lc-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;font-size:14px;margin-bottom:8px}
+.lc-h span{color:var(--soft);font-variant-numeric:tabular-nums;font-size:13px}.lc-h small{color:var(--mute)}
+.plot{position:relative;height:170px;margin:0 14px 24px 40px}
+.plot svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.plot .g line{stroke:var(--hair);stroke-width:1;vector-effect:non-scaling-stroke}
+.plot .xh{stroke:var(--edge);stroke-width:1;vector-effect:non-scaling-stroke;opacity:0}
+.plot.on .xh{opacity:1}
+.plot .ln{fill:none;stroke:var(--s);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.yt,.xt{position:absolute;font-size:11px;color:var(--mute);font-variant-numeric:tabular-nums;white-space:nowrap}
+.yt{right:calc(100% + 8px);transform:translateY(-50%)}.xt{top:calc(100% + 6px);transform:translateX(-50%)}
+.pt{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:var(--s);box-shadow:0 0 0 2px var(--card);outline:none}
+.pt.br{width:7px;height:7px;margin:-3.5px 0 0 -3.5px;opacity:.5;box-shadow:none}
+.pt.br.lo{background:var(--card);border:1.5px solid var(--s);opacity:.75}
+.pt.hot{transform:scale(1.5);opacity:1;z-index:2}
+.dl{position:absolute;transform:translate(6px,-150%);font-size:11.5px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;pointer-events:none}
+.dl.end{transform:translate(-100%,-150%)}
+.tip{position:absolute;z-index:5;pointer-events:none;background:var(--ink);color:var(--card);border-radius:6px;padding:6px 9px;font-size:12px;line-height:1.35;white-space:nowrap;transform:translate(-50%,calc(-100% - 10px))}
+.tip b{display:block;font-weight:600}.tip span{opacity:.8}
+.lc.o{--s:var(--open)}.lc.c{--s:var(--click)}.lc.k{--s:var(--ctor)}
+.lc-tbl{margin-top:4px}.lc-tbl summary{cursor:pointer;font-size:13px;color:var(--soft);padding:4px 0}
+.lc-tbl .tbl-scroll{overflow-x:auto;margin-top:6px}.lc-tbl tr.low td{opacity:.55}
 .sends{width:100%;border-collapse:collapse;font-size:13px;min-width:520px}
 .sends th{text-align:left;font-weight:500;color:var(--mute);font-size:12px;border-bottom:1px solid var(--hair);padding:4px 6px}
 .sends td{padding:5px 6px;border-bottom:1px solid var(--hair);color:var(--soft);font-variant-numeric:tabular-nums}
@@ -718,6 +822,40 @@ JS = r'''
 '''
 
 
+
+LC_JS = r"""
+(function(){
+  document.querySelectorAll('.plot').forEach(function(plot){
+    var tip = plot.querySelector('.tip'), xh = plot.querySelector('.xh'), pts = [].slice.call(plot.querySelectorAll('.pt')), cur = null;
+    function show(p){
+      if(cur) cur.classList.remove('hot');
+      cur = p; p.classList.add('hot');
+      var pr = plot.getBoundingClientRect(), r = p.getBoundingClientRect();
+      var x = r.left + r.width/2 - pr.left, y = r.top + r.height/2 - pr.top;
+      tip.innerHTML = '';
+      var b = document.createElement('b'); b.textContent = p.dataset.n; tip.appendChild(b);
+      var v = document.createElement('div'); v.textContent = p.dataset.v; tip.appendChild(v);
+      var s = document.createElement('span'); s.textContent = p.dataset.s + ' · ' + p.dataset.t; tip.appendChild(s);
+      tip.hidden = false;
+      var w = tip.offsetWidth, left = Math.max(w/2 - 40, Math.min(x, pr.width - w/2 + 14));
+      tip.style.left = left + 'px'; tip.style.top = y + 'px';
+      var pct = x / pr.width * 100; xh.setAttribute('x1', pct); xh.setAttribute('x2', pct);
+      plot.classList.add('on');
+    }
+    function hide(){ if(cur) cur.classList.remove('hot'); cur = null; tip.hidden = true; plot.classList.remove('on'); }
+    function nearest(ev){
+      var best = null, bd = 28;
+      pts.forEach(function(p){ var r = p.getBoundingClientRect(); var d = Math.hypot(r.left + r.width/2 - ev.clientX, r.top + r.height/2 - ev.clientY); if(d < bd){ bd = d; best = p; } });
+      return best;
+    }
+    plot.addEventListener('pointermove', function(ev){ var p = nearest(ev); if(p){ if(p !== cur) show(p); } else hide(); });
+    plot.addEventListener('pointerdown', function(ev){ var p = nearest(ev); if(p) show(p); else hide(); });
+    plot.addEventListener('pointerleave', function(ev){ if(ev.pointerType === 'mouse') hide(); });
+    pts.forEach(function(p){ p.addEventListener('focus', function(){ show(p); }); p.addEventListener('blur', hide); });
+  });
+})();
+"""
+
 def build(d):
     f64 = font_b64()
     font_css = (f'@font-face{{font-family:"Fraunces";src:url(data:font/woff2;base64,{f64}) format("woff2");font-weight:600;font-style:normal}}' if f64 else '')
@@ -762,7 +900,8 @@ def build(d):
 {"".join(secs)}
 </div></div>
 <script type="application/json" id="brief-data">{data_json}</script>
-<script>{JS}</script>'''
+<script>{JS}</script>
+<script>{LC_JS}</script>'''
 
 
 if __name__ == '__main__':
